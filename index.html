@@ -1111,7 +1111,7 @@ function renderStudy(){
   if(state.mode==='flash'){
     const tutor = state.practice
       ? 'Say the meaning and both readings out loud, then tap each veil to check yourself.'
-      : 'Ready for the next one, or want to practice this one?';
+      : 'Ready for the next one?';
     $('#vStudy').innerHTML = `
     <div class="study">
       ${glyphHTML(e,pos,len)}
@@ -1120,9 +1120,7 @@ function renderStudy(){
         ${fieldsHTML(e, state.practice)}
         <div class="tutor">${tutor}</div>
         <div class="actions">
-          ${state.practice
-            ? '<button class="btn ghost" data-act="reveal">Reveal all</button>'
-            : '<button class="btn ghost" data-act="practice">Practice this one</button>'}
+          ${state.practice ? '<button class="btn ghost" data-act="reveal">Reveal all</button>' : ''}
           <button class="btn primary" data-act="next">${pos<len?'Next kanji →':'Finish the sheet →'}</button>
         </div>
         <div class="keyshint">space — next</div>
@@ -1373,7 +1371,6 @@ document.addEventListener('click',e=>{
   if(act){
     const a=act.dataset.act;
     if(a==='next') next();
-    else if(a==='practice'){ state.practice=true; renderStudy(); }
     else if(a==='reveal'){ state.practice=false; renderStudy(); }
     else if(a==='clear'){ const c=$('#trace'); if(c&&c.clear)c.clear(); }
     else if(a==='newsession') renderSetup();
