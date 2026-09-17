@@ -77,7 +77,7 @@ main{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - 84px)}
 .linkish:hover{color:var(--verm)}
 
 /* ---------- study layout ---------- */
-.study{display:grid;grid-template-columns:auto 1fr;gap:clamp(28px,4vw,58px);align-items:start;max-width:1120px}
+.study{display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(28px,4vw,58px);align-items:start;max-width:1120px}
 .glyphwrap{position:relative;width:var(--cell);height:var(--cell);--cell:min(86vw,clamp(280px,42vmin,450px));background:var(--paper2);border:1px solid var(--line);display:grid;place-items:center}
 .guides{position:absolute;inset:13px;pointer-events:none;background:
   linear-gradient(to right,transparent calc(50% - .5px),var(--verm-line) calc(50% - .5px),var(--verm-line) calc(50% + .5px),transparent calc(50% + .5px)),
@@ -94,10 +94,10 @@ main{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - 84px)}
 @keyframes draw{to{stroke-dashoffset:0}}
 
 .cardhead{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--verm);font-weight:600;margin-bottom:14px}
-.f{border-top:1px solid var(--line);padding:15px 2px;display:grid;grid-template-columns:118px 1fr;gap:14px;animation:rise .55s both;animation-delay:var(--d,0s)}
+.f{border-top:1px solid var(--line);padding:15px 2px;display:grid;grid-template-columns:minmax(0,124px) minmax(0,1fr);gap:14px;align-items:start;animation:rise .55s both;animation-delay:var(--d,0s)}
 @keyframes rise{0%{opacity:0;transform:translateY(7px)}100%{opacity:1;transform:none}}
-.flab{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);font-weight:600;padding-top:4px}
-.fval{font-size:17px;line-height:1.55}
+.flab{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);font-weight:600;padding-top:4px;min-width:0;line-height:1.4;overflow-wrap:anywhere;word-break:break-word}
+.fval{font-size:17px;line-height:1.55;min-width:0;overflow-wrap:anywhere}
 .readings{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline}
 .rlab{display:block;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);margin-bottom:2px}
 .rval{font-family:var(--jp);font-size:21px;font-weight:600}
@@ -131,7 +131,7 @@ main{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - 84px)}
 .opt.dim{opacity:.45}
 .mark{margin-left:auto;font-family:var(--jp);color:var(--verm);font-weight:700;font-size:21px;line-height:1}
 .reveal{margin-top:28px;animation:rise .5s both}
-.reveal .f{grid-template-columns:118px 1fr}
+.reveal .f{grid-template-columns:minmax(0,124px) minmax(0,1fr)}
 
 /* ---------- writing ---------- */
 .wchips{display:flex;gap:10px;flex-wrap:wrap;margin:2px 0 20px}
@@ -190,6 +190,11 @@ footer{border-top:1px solid var(--line);padding:16px 28px;font-size:12px;color:v
   .glyphwrap{margin:0 auto}
   .vstrip{display:none}
   .topmeta{display:none}
+}
+@media(max-width:620px){
+  .f{grid-template-columns:1fr;gap:2px}
+  .flab{padding-top:0}
+  .fval{padding-bottom:2px}
 }
 </style>
 </head>
@@ -665,7 +670,6 @@ const N3 = [
   ["過","over, past","カ","す(ぎる), あやま(つ)","milestone ＋ road","Passing the milestone on the road — going beyond.","過ぎる","すぎる","to exceed, pass"],
   ["倒","fall over","トウ","たお(れる), たお(す)","person ＋ toppled","A person arriving headfirst — toppled over.","倒れる","たおれる","to fall over"],
   ["痛","pain","ツウ","いた(い), いた(む)","sickness ＋ ache","An ache lying in the sickbed — pain.","痛い","いたい","painful"],
- 
   ["最","utmost, most","サイ","もっと(も)","sun ＋ taking","The sun watching one act seize the very top spot — the utmost.","最近","さいきん","recently"],
   ["現","appear, present","ゲン","あらわ(れる), あらわ(す)","king ＋ see","A king's jewel revealed to the eye — appearing now.","現在","げんざい","the present time"],
   ["調","investigate, tune","チョウ","ととの(える), しら(べる)","words ＋ round","Words checked round and round until they match — to tune, to investigate.","調べる","しらべる","to investigate"],
