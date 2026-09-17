@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUMI — a quiet kanji study room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Noto+Serif+JP:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --paper:#F3EEE1; --paper2:#ECE4D2; --ink:#211D15; --soft:#6E6553;
+  --line:rgba(33,29,21,.16); --line2:rgba(33,29,21,.38);
+  --verm:#BC3F2C; --verm-soft:rgba(188,63,44,.10); --verm-line:rgba(188,63,44,.30);
+  --jp:'Noto Serif JP',serif; --lat:'Fraunces',serif;
+}
+html{background:var(--paper)}
+body{font-family:var(--lat);color:var(--ink);background:var(--paper);min-height:100vh;-webkit-font-smoothing:antialiased}
+.jp{font-family:var(--jp)}
+button{font-family:inherit}
+.grain{position:fixed;inset:0;z-index:50;pointer-events:none;opacity:.6;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ---------- header ---------- */
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 28px;border-bottom:1px solid var(--line)}
+.brand{display:flex;gap:14px;align-items:center}
+.seal{width:46px;height:46px;flex:none;background:var(--verm);color:#F7F1E3;display:grid;place-items:center;font-family:var(--jp);font-weight:900;font-size:25px;transform:rotate(-3.5deg);box-shadow:0 1px 0 rgba(33,29,21,.25)}
+.brandtxt strong{font-size:19px;letter-spacing:.2em;font-weight:600}
+.brandtxt em{display:block;font-size:12.5px;color:var(--soft)}
+.topmeta{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);text-align:right}
+
+/* ---------- shell ---------- */
+main{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - 84px)}
+.stage{position:relative;padding:clamp(28px,4.5vw,60px);overflow:hidden}
+.view{animation:vin .45s both}
+@keyframes vin{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
+.vstrip{position:absolute;top:44px;right:34px;writing-mode:vertical-rl;font-family:var(--jp);font-weight:500;color:var(--verm);opacity:.45;letter-spacing:.42em;font-size:13.5px;user-select:none}
+
+/* ---------- setup ---------- */
+.setup{max-width:840px;position:relative}
+.overline{font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--verm);font-weight:600}
+.setup h1{font-size:clamp(30px,4.4vw,46px);font-weight:600;line-height:1.1;margin:12px 0 8px;letter-spacing:-.01em}
+.setup .lede{color:var(--soft);font-style:italic;font-size:16px;margin-bottom:8px}
+.qlabel{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin:34px 0 14px;font-weight:600}
+.qlabel b{color:var(--verm);margin-right:10px;font-style:italic;font-family:var(--lat);font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{border:1px solid var(--line2);background:transparent;color:var(--ink);font-size:14.5px;padding:10px 16px;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.chip small{opacity:.55;font-size:12px;margin-left:7px}
+.chip:hover{border-color:var(--ink)}
+.chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.customrow{margin-top:14px;animation:vin .35s both}
+.tinput{width:min(460px,100%);background:transparent;border:1px solid var(--line2);padding:12px 14px;font-family:var(--jp);font-size:18px;color:var(--ink)}
+.tinput:focus{outline:none;border-color:var(--ink)}
+.ihint{font-size:12.5px;color:var(--soft);font-style:italic;margin-top:8px}
+.modeopts{border-top:1px solid var(--line)}
+.modeopt{display:flex;gap:16px;align-items:baseline;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:16px 8px;cursor:pointer;color:var(--ink);transition:background .15s}
+.modeopt:hover{background:rgba(33,29,21,.045)}
+.modeopt .dot{width:15px;height:15px;border:1.5px solid var(--soft);border-radius:50%;flex:none;position:relative;top:2px;transition:all .15s}
+.modeopt.on .dot{background:var(--verm);border-color:var(--verm)}
+.modeopt .mname{font-weight:600;font-size:17px;min-width:112px}
+.modeopt.on .mname{color:var(--verm)}
+.modeopt .mdesc{color:var(--soft);font-size:14px;font-style:italic}
+.setupfoot{display:flex;align-items:center;gap:24px;margin-top:38px;flex-wrap:wrap}
+.ordwrap{display:flex;gap:8px;align-items:center}
+.ordlab{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.chip.mini{padding:7px 13px;font-size:13px}
+
+/* ---------- buttons ---------- */
+.btn{font-weight:600;font-size:15px;padding:13px 26px;background:transparent;border:1px solid var(--ink);color:var(--ink);cursor:pointer;transition:background .18s,color .18s,border-color .18s;letter-spacing:.02em}
+.btn:hover{background:var(--ink);color:var(--paper)}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn.primary:hover{background:var(--verm);border-color:var(--verm)}
+.btn.ghost{border-color:var(--line2);color:var(--soft)}
+.btn.ghost:hover{border-color:var(--ink);color:var(--ink);background:transparent}
+.linkish{background:none;border:none;font-size:12.5px;color:var(--soft);text-decoration:underline;cursor:pointer;padding:0}
+.linkish:hover{color:var(--verm)}
+
+/* ---------- study layout ---------- */
+.study{display:grid;grid-template-columns:auto 1fr;gap:clamp(28px,4vw,58px);align-items:start;max-width:1120px}
+.glyphwrap{position:relative;width:var(--cell);height:var(--cell);--cell:min(86vw,clamp(280px,42vmin,450px));background:var(--paper2);border:1px solid var(--line);display:grid;place-items:center}
+.guides{position:absolute;inset:13px;pointer-events:none;background:
+  linear-gradient(to right,transparent calc(50% - .5px),var(--verm-line) calc(50% - .5px),var(--verm-line) calc(50% + .5px),transparent calc(50% + .5px)),
+  linear-gradient(to bottom,transparent calc(50% - .5px),var(--verm-line) calc(50% - .5px),var(--verm-line) calc(50% + .5px),transparent calc(50% + .5px))}
+.glyph{font-family:var(--jp);font-weight:700;font-size:calc(var(--cell)*.58);line-height:1;animation:inkIn .85s cubic-bezier(.2,.6,.2,1) both}
+@keyframes inkIn{0%{opacity:0;filter:blur(14px);transform:scale(1.06)}55%{opacity:1}100%{opacity:1;filter:blur(0);transform:scale(1)}}
+.glyphtag{position:absolute;left:15px;top:13px;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft)}
+.glyphtag b{color:var(--verm);font-weight:600}
+.stamp{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.stamp svg{width:62%;height:62%;animation:pop .5s .12s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes pop{0%{transform:rotate(-8deg) scale(.6);opacity:0}100%{transform:rotate(-8deg) scale(1);opacity:1}}
+.stamp .st{stroke:var(--verm);stroke-width:9;fill:none;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100;animation:draw .5s ease-out forwards}
+.stamp .st.d2{animation-delay:.18s}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+.cardhead{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--verm);font-weight:600;margin-bottom:14px}
+.f{border-top:1px solid var(--line);padding:15px 2px;display:grid;grid-template-columns:118px 1fr;gap:14px;animation:rise .55s both;animation-delay:var(--d,0s)}
+@keyframes rise{0%{opacity:0;transform:translateY(7px)}100%{opacity:1;transform:none}}
+.flab{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);font-weight:600;padding-top:4px}
+.fval{font-size:17px;line-height:1.55}
+.readings{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline}
+.rlab{display:block;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);margin-bottom:2px}
+.rval{font-family:var(--jp);font-size:21px;font-weight:600}
+.rsep{width:1px;align-self:stretch;background:var(--line)}
+.none{color:var(--soft);font-style:italic;font-family:var(--lat);font-size:14px}
+.mnem{font-style:italic;font-size:18px;line-height:1.55;padding-left:14px;border-left:2px solid var(--verm)}
+.example{font-family:var(--jp);font-size:25px;font-weight:600}
+.example rt{font-size:12px;color:var(--soft);font-weight:500}
+.exmean{font-family:var(--lat);font-size:15px;color:var(--soft);font-style:italic;margin-left:10px;font-weight:400}
+.fv{position:relative;display:inline-block}
+.cover{position:absolute;inset:-3px -6px;background:var(--ink);color:var(--paper);border:0;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:opacity .35s,transform .35s,background .15s}
+.cover:hover{background:var(--verm)}
+.fv.rev .cover{opacity:0;transform:scale(1.05);pointer-events:none}
+
+.tutor{margin:26px 2px 16px;font-style:italic;font-size:15.5px;color:var(--soft)}
+.tutor::before{content:"— ";color:var(--verm)}
+.actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.keyshint{font-size:11.5px;color:var(--soft);opacity:.75;letter-spacing:.06em;margin-top:20px}
+
+/* ---------- quiz ---------- */
+.qq{font-size:clamp(21px,2.8vw,29px);font-weight:600;line-height:1.25;margin:4px 0 26px}
+.qq .jp{font-size:1.3em;font-weight:700}
+.opts{display:flex;flex-direction:column;gap:10px;max-width:560px}
+.opts.lock .opt{pointer-events:none}
+.opt{display:flex;align-items:center;gap:14px;text-align:left;background:transparent;border:1px solid var(--line2);padding:13px 18px;font-size:16.5px;color:var(--ink);cursor:pointer;transition:border-color .15s,background .15s}
+.opt .num{font-size:10.5px;color:var(--soft);letter-spacing:.1em;min-width:18px}
+.opt:hover{border-color:var(--ink)}
+.opt .jp{font-size:19px;font-weight:600}
+.opt.good{border-color:var(--verm);background:var(--verm-soft)}
+.opt.bad{color:var(--soft);background:rgba(33,29,21,.05)}
+.opt.dim{opacity:.45}
+.mark{margin-left:auto;font-family:var(--jp);color:var(--verm);font-weight:700;font-size:21px;line-height:1}
+.reveal{margin-top:28px;animation:rise .5s both}
+.reveal .f{grid-template-columns:118px 1fr}
+
+/* ---------- writing ---------- */
+.wchips{display:flex;gap:10px;flex-wrap:wrap;margin:2px 0 20px}
+.wchip{border:1px solid var(--line2);padding:8px 14px;font-family:var(--jp);font-size:17px}
+.wchip span{font-family:var(--lat);font-size:12px;color:var(--soft);margin-left:8px;font-style:italic}
+.principles{list-style:none;border-top:1px solid var(--line);max-width:520px}
+.principles li{border-bottom:1px solid var(--line);padding:10px 2px;font-size:14.5px;display:flex;gap:10px}
+.principles li::before{content:"・";color:var(--verm);font-weight:700}
+.snote{font-size:12.5px;color:var(--soft);font-style:italic;margin-top:14px;max-width:520px;line-height:1.6}
+.tracewrap{position:relative;width:min(100%,380px);aspect-ratio:1;margin-top:22px;background:var(--paper2);border:1px solid var(--line)}
+.tracewrap::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+  repeating-linear-gradient(to right,rgba(188,63,44,.22) 0 1px,transparent 1px 33.333%),
+  repeating-linear-gradient(to bottom,rgba(188,63,44,.22) 0 1px,transparent 1px 33.333%),
+  linear-gradient(to right,transparent calc(50% - .5px),rgba(188,63,44,.4) calc(50% - .5px),rgba(188,63,44,.4) calc(50% + .5px),transparent calc(50% + .5px)),
+  linear-gradient(to bottom,transparent calc(50% - .5px),rgba(188,63,44,.4) calc(50% - .5px),rgba(188,63,44,.4) calc(50% + .5px),transparent calc(50% + .5px))}
+.ghost{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--jp);font-weight:700;color:rgba(33,29,21,.09);user-select:none;pointer-events:none}
+#trace{position:relative;width:100%;height:100%;touch-action:none;cursor:crosshair;z-index:2}
+.tracebar{display:flex;gap:10px;margin-top:12px}
+
+/* ---------- rail ---------- */
+.rail{border-right:1px solid var(--line);padding:26px 24px;display:flex;flex-direction:column;gap:28px}
+.rail h3{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);font-weight:600;margin-bottom:12px}
+.sumline{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:7px 0;border-top:1px solid var(--line)}
+.sumline span{color:var(--soft)}
+.sumline b{font-weight:600;text-align:right}
+.sheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(13px,1fr));gap:3px}
+.sheet i{aspect-ratio:1;border:1px solid var(--line)}
+.sheet i.ok{background:var(--ink);border-color:var(--ink)}
+.sheet i.ng{background:var(--verm);border-color:var(--verm)}
+.sheet i.cur{border-color:var(--verm);box-shadow:inset 0 0 0 1.5px var(--verm)}
+.sheetmeta{font-size:12.5px;color:var(--soft);margin-top:10px;display:flex;justify-content:space-between}
+.tally{display:flex;gap:18px;font-family:var(--jp);font-size:15px;font-weight:600}
+.tally .c{color:var(--verm)}
+.railnote{margin-top:auto;font-size:12px;line-height:1.65;color:var(--soft);border-top:1px solid var(--line);padding-top:14px}
+
+/* ---------- end ---------- */
+.endwrap{max-width:780px}
+.score{font-size:clamp(56px,10vw,96px);font-weight:700;line-height:1;letter-spacing:-.01em}
+.score small{font-size:.42em;color:var(--soft);font-weight:500}
+.verdict{font-style:italic;font-size:19px;margin:18px 0 30px}
+.verdict::before{content:"— ";color:var(--verm)}
+.misslist{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 32px}
+.miss{border:1px solid var(--line2);padding:12px 16px;min-width:132px}
+.miss .jk{font-family:var(--jp);font-size:27px;font-weight:700;line-height:1.1}
+.miss .mn2{font-size:12.5px;color:var(--soft);font-style:italic}
+
+/* ---------- toast / footer ---------- */
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);background:var(--ink);color:var(--paper);padding:12px 20px;font-size:13.5px;opacity:0;transition:all .3s;z-index:60;border-left:3px solid var(--verm);max-width:min(90vw,560px);pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%)}
+footer{border-top:1px solid var(--line);padding:16px 28px;font-size:12px;color:var(--soft);display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;line-height:1.6}
+
+@media(max-width:940px){
+  main{grid-template-columns:1fr}
+  .rail{border-right:0;border-bottom:1px solid var(--line);order:2}
+  .study{grid-template-columns:1fr}
+  .glyphwrap{margin:0 auto}
+  .vstrip{display:none}
+  .topmeta{display:none}
+}
+</style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<header>
+  <div class="brand">
+    <div class="seal">墨</div>
+    <div class="brandtxt"><strong>SUMI</strong><em>a quiet kanji study room</em></div>
+  </div>
+  <div class="topmeta">700 kanji · N5–N3 · hand-verified readings</div>
+</header>
+
+<main>
+  <aside class="rail">
+    <div>
+      <h3>Session</h3>
+      <div id="railSum"></div>
+    </div>
+    <div>
+      <h3>Progress sheet</h3>
+      <div class="sheet" id="sheet"></div>
+      <div class="sheetmeta" id="sheetMeta"></div>
+    </div>
+    <div id="tallyBox" hidden>
+      <h3>Tally</h3>
+      <div class="tally" id="tally"></div>
+    </div>
+    <div class="railnote">
+      Every reading, radical note and example word here comes from a hand-verified set —
+      nothing is invented. Exact stroke orders are not animated; confirm sequences with a
+      dedicated stroke-order chart.
+    </div>
+  </aside>
+
+  <section class="stage">
+    <div class="vstrip" aria-hidden="true">毎日五分の漢字</div>
+    <div id="vSetup" class="view"></div>
+    <div id="vStudy" class="view" hidden></div>
+    <div id="vEnd" class="view" hidden></div>
+  </section>
+</main>
+
+<footer>
+  <span>墨 SUMI — flashcards, quizzes and writing practice for JLPT N5 → N3.</span>
+  <span>〇 correct · ✕ incorrect — the marks are recorded on your progress sheet.</span>
+</footer>
+
+<div id="toast" role="status"></div>
+
+<script>
+/* ============================================================
+   DATA — every entry: [kanji, meaning, on'yomi, kun'yomi,
+   radicals, mnemonic, example, furigana, example meaning]
+   Readings and words are limited to a verified common set.
+   ============================================================ */
+const mk = lv => a => ({k:a[0], m:a[1], on:a[2], kun:a[3], rad:a[4], mn:a[5], ex:a[6], exF:a[7], exM:a[8], lv});
+
+const N5 = [
+  ["日", "day, sun", "ニチ", "ひ, び", "sun with a line through it", "One crossing of the sun marks one day.", "日本", "にほん", "Japan"],
+  ["一", "one", "イチ", "ひと(つ)", "a single horizontal line", "One stroke of the brush — one.", "一つ", "ひとつ", "one thing"],
+  ["国", "country", "コク", "くに", "enclosure ＋ jade treasure", "A treasure kept safe inside its borders — a country.", "外国", "がいこく", "foreign country"],
+  ["人", "person", "ジン, ニン", "ひと", "a person seen from the side", "Two legs seen from the side — a person walking.", "人々", "ひとびと", "people"],
+  ["年", "year", "ネン", "とし", "grain carried home at harvest", "One harvest carried home marks one year.", "今年", "ことし", "this year"],
+  ["大", "big", "ダイ, タイ", "おお(きい)", "a person with arms spread wide", "A person stretching their arms as far as they go — big.", "大きい", "おおきい", "big"],
+  ["十", "ten", "ジュウ, ジッ", "とお", "two strokes crossing", "One stroke north–south, one east–west — ten directions, ten.", "十分", "じゅうぶん", "enough"],
+  ["二", "two", "ニ", "ふた(つ)", "two stacked lines", "One line, then another beneath it — two.", "二つ", "ふたつ", "two things"],
+  ["本", "book, origin", "ホン", "もと", "tree ＋ root line", "A tree with its base marked — the root of things; a book.", "本", "ほん", "book"],
+  ["中", "middle", "チュウ", "なか", "an arrow through the center of a box", "An arrow struck dead center — the middle.", "中国", "ちゅうごく", "China"],
+  ["長", "long", "チョウ", "なが(い)", "a figure with long hair and long strides", "Hair down the back, strides far apart — long.", "長い", "ながい", "long"],
+  ["出", "exit, go out", "シュツ", "で(る), だ(す)", "a sprout breaking through the ground", "A young shoot forcing its way out of the soil — to go out.", "出口", "でぐち", "exit"],
+  ["三", "three", "サン", "み(つ)", "three stacked lines", "One, two, three — just count the strokes.", "三つ", "みっつ", "three things"],
+  ["時", "time, hour", "ジ", "とき", "sun ＋ temple", "The sun marks the hours on the temple bell — time.", "時間", "じかん", "time, hour"],
+  ["行", "go", "コウ, ギョウ", "い(く), おこな(う)", "a crossroads ＋ footsteps", "Footpaths crossing — each one leads somewhere; to go.", "銀行", "ぎんこう", "bank"],
+  ["見", "see", "ケン", "み(る)", "an eye on two legs", "An eye set on legs — a figure standing and looking.", "見る", "みる", "to see"],
+  ["月", "month, moon", "ゲツ, ガツ", "つき", "a crescent moon", "The moon waxes once a month — moon, month.", "今月", "こんげつ", "this month"],
+  ["分", "part, minute", "フン, ブン", "わ(ける), わ(かる)", "an eight-way split ＋ knife", "A knife dividing things eight ways — a part, a minute.", "五分", "ごふん", "five minutes"],
+  ["後", "after, behind", "ゴ", "のち, あと, うし(ろ)", "walking ＋ small steps following", "One walker, another's steps falling in behind — after.", "後ろ", "うしろ", "behind"],
+  ["前", "before, front", "ゼン", "まえ", "feet stepping off a boat", "Feet stepping off the boat onto the shore ahead — front.", "駅前", "えきまえ", "in front of the station"],
+  ["生", "life, birth", "セイ, ショウ", "い(きる), う(まれる), なま", "a sprout pushing up from the soil", "A fresh shoot rising from the earth — new life.", "学生", "がくせい", "student"],
+  ["五", "five", "ゴ", "いつ(つ)", "a spool winding thread", "Five threads wound on a reel — five.", "五つ", "いつつ", "five things"],
+  ["間", "interval, between", "カン, ケン", "あいだ, ま", "gate ＋ moon", "The moon glimpsed through a gate — the space between.", "人間", "にんげん", "human being"],
+  ["上", "up, above", "ジョウ", "うえ, あ(がる), のぼ(る)", "a marker above a baseline", "A small stroke perched above the line — up.", "上手", "じょうず", "skillful"],
+  ["東", "east", "トウ", "ひがし", "sun ＋ tree", "The sun rising just behind a tree — east.", "東京", "とうきょう", "Tokyo"],
+  ["四", "four", "シ", "よん, よ(つ)", "a box divided inside", "A field enclosed and crossed into quarters — four.", "四つ", "よっつ", "four things"],
+  ["今", "now", "コン, キン", "いま", "an overturned lid over a mark", "A snapshot taken this very instant — now.", "今日", "きょう", "today"],
+  ["新", "new", "シン", "あたら(しい), さら", "tree ＋ axe ＋ standing timber", "Fresh-cut timber, sharp from the axe — new.", "新しい", "あたらしい", "new"],
+  ["金", "gold, money", "キン", "かね", "a roof ＋ two nuggets in the earth", "Two bright nuggets under a roof — gold, money.", "お金", "おかね", "money"],
+  ["九", "nine", "キュウ, ク", "ここの(つ)", "a bent hook", "A hook reaching for the last single digit — nine.", "九つ", "ここのつ", "nine things"],
+  ["入", "enter", "ニュウ", "はい(る), い(れる)", "two streams joining one opening", "Two currents slipping into one gap — to enter.", "入る", "はいる", "to enter"],
+  ["立", "stand", "リツ", "た(つ), た(てる)", "a figure planted on the ground", "A person planted firmly on the earth — to stand.", "立つ", "たつ", "to stand"],
+  ["手", "hand", "シュ", "て", "a hand with fingers and palm lines", "Fingers spread, wrist curved — a hand.", "手紙", "てがみ", "letter"],
+  ["学", "study, learn", "ガク", "まな(ぶ)", "a child under a roof, hands raised", "A child's hands raised under the school roof — study.", "学校", "がっこう", "school"],
+  ["高", "high, tall", "コウ", "たか(い)", "a tall watchtower in layers", "A watchtower with rooms stacked high — tall.", "高い", "たかい", "high, expensive"],
+  ["円", "circle, yen", "エン", "まる(い)", "a round coin", "A smooth round coin — the yen.", "円", "えん", "yen"],
+  ["子", "child", "シ, ス", "こ", "a swaddled baby, arms out", "A baby wrapped tight, little arms sticking out — child.", "子供", "こども", "child"],
+  ["目", "eye", "モク, ボク", "め", "an eye drawn as a slit", "An eye narrowed to a line, pupil inside — eye.", "目", "め", "eye"],
+  ["外", "outside", "ガイ", "そと, ほか", "evening ＋ a divination mark", "Fortunes told outside the gate at dusk — outside.", "外", "そと", "outside"],
+  ["女", "woman", "ジョ, ニョ", "おんな", "a kneeling figure with crossed arms", "A figure kneeling gracefully, arms folded — woman.", "女の人", "おんなのひと", "woman"],
+  ["男", "man", "ダン, ナン", "おとこ", "field ＋ strength", "Strength in the rice field — man.", "男の人", "おとこのひと", "man"],
+  ["母", "mother", "ボ", "はは", "a woman with two nursing marks", "A woman with two marks at the chest — mother.", "お母さん", "おかあさん", "mother"],
+  ["父", "father", "フ", "ちち", "a hand raised holding a tool", "A standing figure with an axe raised — father.", "お父さん", "おとうさん", "father"],
+  ["友", "friend", "ユウ", "とも", "two hands joined", "Two hands clasped in the same direction — friend.", "友達", "ともだち", "friend"],
+  ["名", "name", "メイ, ミョウ", "な", "evening ＋ mouth", "Calling names across the evening dark — a name.", "名前", "なまえ", "name"],
+  ["白", "white", "ハク, ビャク", "しろ(い), しら", "the sun with a ray on top", "The sun with one bright flick of light — white.", "白い", "しろい", "white"],
+  ["赤", "red", "セキ, シャク", "あか(い)", "a great blaze over the earth", "A great fire licking over the soil — glowing red.", "赤い", "あかい", "red"],
+  ["青", "blue, green", "セイ, ショウ", "あお(い)", "young growth over a well", "Young plants springing up by the water — blue-green.", "青い", "あおい", "blue"],
+  ["多", "many", "タ", "おお(い)", "two evenings stacked", "Night after night, layered up — many.", "多い", "おおい", "many"],
+  ["少", "few, little", "ショウ", "すく(ない), すこ(し)", "small ＋ a stray stroke", "One small mark drifting off — just a little.", "少し", "すこし", "a little"],
+  ["古", "old", "コ", "ふる(い)", "ten ＋ mouth", "Ten generations of mouths — old.", "古い", "ふるい", "old"],
+  ["安", "cheap, peaceful", "アン", "やす(い)", "roof ＋ woman", "A woman resting safe under the roof — peace at a low price.", "安い", "やすい", "cheap"],
+  ["近", "near", "キン", "ちか(い)", "axe ＋ road", "A road short enough to reach in one axe-swing — near.", "近い", "ちかい", "near"],
+  ["遠", "far", "エン", "とお(い)", "a long journey on foot", "A road that winds and winds — far.", "遠い", "とおい", "far"],
+  ["強", "strong", "キョウ, ゴウ", "つよ(い), つよ(まる)", "bow ＋ insect ＋ mouth", "Even a tiny insect can bend a strong bow — strong.", "強い", "つよい", "strong"],
+  ["弱", "weak", "ジャク", "よわ(い), よわ(まる)", "two bows side by side", "Two bows drooping together — too weak to draw.", "弱い", "よわい", "weak"],
+  ["重", "heavy", "ジュウ, チョウ", "おも(い), かさ(ねる)", "grain heaped in layers", "Grain piled layer upon layer — heavy.", "重い", "おもい", "heavy"],
+  ["軽", "light (weight)", "ケイ", "かる(い)", "a cart on a narrow lane", "A cart rattling lightly down the lane — light.", "軽い", "かるい", "light"],
+  ["止", "stop", "シ", "と(まる), と(める)", "footprints halted at a line", "Footprints that stop dead at a line — stop.", "止まる", "とまる", "to stop"],
+  ["始", "begin", "シ", "はじ(める), はじ(まる)", "woman ＋ platform", "A woman takes the stage first — the beginning.", "始まる", "はじまる", "to begin"],
+  ["終", "end", "シュウ", "お(わる)", "thread ＋ winter", "The last thread of yarn tied off in winter — the end.", "終わり", "おわり", "the end"],
+  ["言", "say", "ゲン, ゴン", "い(う)", "lines of speech above a mouth", "Lines of words rising from a mouth — to say.", "言う", "いう", "to say"],
+  ["語", "language", "ゴ", "かた(る)", "words ＋ mouth", "Words passed mouth to mouth — language.", "日本語", "にほんご", "Japanese language"],
+  ["食", "eat", "ショク", "た(べる), く(う)", "a lidded grain jar with a spoon", "A covered jar of rice, lid tilted to eat — food.", "食べる", "たべる", "to eat"],
+  ["飲", "drink", "イン", "の(む)", "food jar ＋ open mouth", "Mouth open at the jar, taking it in — to drink.", "飲む", "のむ", "to drink"],
+  ["会", "meet", "カイ", "あ(う)", "people gathered under a roof", "Many gathered under one roof — a meeting.", "会社", "かいしゃ", "company"],
+  ["買", "buy", "バイ", "か(う)", "a net of goods ＋ shell money", "A net of goods traded for shell money — to buy.", "買う", "かう", "to buy"],
+  ["聞", "hear, ask", "ブン, モン", "き(く)", "ear ＋ gate", "An ear pressed to the gate — listening.", "聞く", "きく", "to hear, to ask"],
+  ["読", "read", "ドク", "よ(む)", "words ＋ a dealer's chant", "Words chanted like a street-seller's call — reading aloud.", "読む", "よむ", "to read"],
+  ["書", "write", "ショ", "か(く)", "a brush tracing lines", "A brush laying lines down on paper — to write.", "書く", "かく", "to write"],
+  ["話", "talk, story", "ワ", "はな(す), はなし", "words ＋ tongue", "Words rolled on the tongue — talk.", "話す", "はなす", "to talk"],
+  ["休", "rest", "キュウ", "やす(む)", "person ＋ tree", "A person leaning against a tree — rest.", "休む", "やすむ", "to rest"],
+  ["山", "mountain", "サン", "やま", "three peaks", "Three ridgelines rising — a mountain.", "火山", "かざん", "volcano"],
+  ["川", "river", "セン", "かわ", "three flowing lines", "One stream running between two banks — a river.", "川", "かわ", "river"],
+  ["田", "rice field", "デン", "た", "paddies divided into squares", "Wet fields squared off for planting — rice field.", "田んぼ", "たんぼ", "rice paddy"],
+  ["木", "tree, wood", "ボク, モク", "き", "branches above, roots below", "Branches up, roots down, trunk between — a tree.", "木", "き", "tree"],
+  ["火", "fire", "カ", "ひ", "flames with sparks flying", "A flame curling sideways, sparks scattering — fire.", "火曜日", "かようび", "Tuesday"],
+  ["水", "water", "スイ", "みず", "a central stream with side currents", "One main current with ripples either side — water.", "水曜日", "すいようび", "Wednesday"],
+  ["土", "earth, soil", "ド, ト", "つち", "a sprout above the ground", "A shoot rising from the soil line — earth.", "土曜日", "どようび", "Saturday"],
+  ["空", "sky, empty", "クウ", "そら, あ(く), から", "a hollow cave ＋ work", "The hollow vault where all the weather's work happens — the sky.", "空", "そら", "sky"],
+  ["雨", "rain", "ウ", "あめ", "drops falling from a cloud edge", "Four drops slipping from a cloud line — rain.", "雨", "あめ", "rain"],
+  ["花", "flower", "カ", "はな", "plant ＋ transformation", "A plant changing into blossom — flower.", "花火", "はなび", "fireworks"],
+  ["天", "heaven, sky", "テン", "あま", "big ＋ the highest line", "The highest point above us all — heaven.", "天気", "てんき", "weather"],
+  ["気", "spirit, air", "キ, ケ", "—", "steam rising", "Breath rising off the fields — the air, the mood.", "空気", "くうき", "air"],
+  ["左", "left", "サ", "ひだり", "left hand ＋ tool", "The hand that steadies the work — left.", "左手", "ひだりて", "left hand"],
+  ["右", "right", "ウ, ユウ", "みぎ", "right hand ＋ mouth", "The hand that feeds the mouth — right.", "右手", "みぎて", "right hand"],
+  ["西", "west", "セイ, サイ", "にし", "a bird settling into its nest at dusk", "Birds sink into their nests as the sun goes down — west.", "東西", "とうざい", "east and west"],
+  ["南", "south", "ナン", "みなみ", "vines bending toward the sun", "Growth bends toward the sunshine — south.", "南", "みなみ", "south"],
+  ["北", "north", "ホク", "きた", "two people back to back", "Two figures standing back to back against the cold — north.", "北", "きた", "north"]
+].map(mk("N5"));
+
+const N4 = [
+  ["同","same","ドウ","おな(じ)","roof ＋ mouth","Under one roof, everyone says the same word — the same.","同じ","おなじ","the same"],
+  ["事","matter, thing","ジ","こと","a holding hand ＋ brush","A hand catching each task as it falls — a matter, a job.","仕事","しごと","work"],
+  ["自","self","ジ","みずか(ら)","a nose","A drawn nose — the one you point at to say 'me'.","自分","じぶん","oneself"],
+  ["社","company, shrine","シャ","やしろ","altar ＋ earth","An altar to the earth god — shrine, then company.","社長","しゃちょう","company president"],
+  ["発","depart, emit","ハツ","—","two stepping feet","Two feet pushing off — departure, release.","出発","しゅっぱつ","departure"],
+  ["者","person (who does)","シャ","もの","elder ＋ sun","An elder who has seen many days — a person of that kind.","医者","いしゃ","doctor"],
+  ["地","ground, place","チ","—","earth ＋ serpent","Earth where the serpent coils — the ground.","地図","ちず","map"],
+  ["業","business, occupation","ギョウ","わざ","a workbench ＋ tools","Tools laid out over the workbench — one's trade.","工業","こうぎょう","industry"],
+  ["方","direction, method","ホウ","かた","a bound tool","A hoe tied at one end — a fixed way of doing things.","方法","ほうほう","way, method"],
+  ["場","place","ジョウ","ば","earth ＋ leveling","Earth leveled flat for the event — a place.","場所","ばしょ","place"],
+  ["員","member","イン","—","a tally ＋ mouth","Mouths counted around the table — staff members.","会社員","かいしゃいん","company employee"],
+  ["開","open","カイ","ひら(く), あ(ける)","gate ＋ two hands","Two hands lifting the bar off the gate — open.","開ける","あける","to open"],
+  ["力","power","リョク, リキ","ちから","a flexed arm","A flexed forearm — power.","力","ちから","strength"],
+  ["問","ask, question","モン","と(う)","gate ＋ mouth","A mouth at the gate, calling out a question.","質問","しつもん","question"],
+  ["代","substitute, era","ダイ, タイ","か(わる)","person ＋ turn","One person taking another's shift — substitute, era.","時代","じだい","era"],
+  ["明","bright, next","メイ, ミョウ","あ(かるい), あき(らか)","sun ＋ moon","Sun beside moon — bright.","明日","あした","tomorrow"],
+  ["動","move","ドウ","うご(く)","heavy ＋ force","Force applied to a weight — movement.","動く","うごく","to move"],
+  ["京","capital","キョウ, ケイ","—","a raised structure","A tall structure on the hill — the capital.","京都","きょうと","Kyoto"],
+  ["通","pass, commute","ツウ","とお(る), かよ(う)","road ＋ passage","Walking through the passage — to pass through.","通る","とおる","to pass"],
+  ["理","reason, logic","リ","—","jade ＋ grain pattern","Jade worked along its natural grain — reason.","理由","りゆう","reason"],
+  ["体","body","タイ","からだ","person ＋ root","A person standing rooted — the body.","体","からだ","body"],
+  ["主","master, main","シュ, ス","ぬし, あるじ","a nail at the center","The central nail everything hangs on — the main one.","主人","しゅじん","master of the house"],
+  ["題","topic, title","ダイ","—","upright ＋ page","A page set squarely before you — the topic.","問題","もんだい","problem, question"],
+  ["意","intention, meaning","イ","—","sound ＋ heart","A sound landing in the heart — intention.","意味","いみ","meaning"],
+  ["不","not, un-","フ","—","a soaring bird","A bird flying straight up, out of reach — not.","不便","ふべん","inconvenient"],
+  ["教","teach","キョウ","おし(える), おそ(わる)","elder and child ＋ rod","An elder guiding a child, rod in hand — teaching.","教える","おしえる","to teach"],
+  ["文","sentence, writing","ブン, モン","ふみ","crossed strokes","Two strokes crossing — the first mark of writing.","文字","もじ","letter, character"],
+  ["元","origin","ゲン, ガン","もと","person ＋ crown line","A person with the crown marked — the origin.","元気","げんき","lively, healthy"],
+  ["考","consider","コウ","かんが(える)","elder ＋ brush","An elder bent over in thought — to ponder.","考える","かんがえる","to think"],
+  ["画","picture","ガ","—","frame ＋ field","A framed field — a picture.","映画","えいが","movie"],
+  ["海","sea","カイ","うみ","water ＋ every","Every drop of water there is — the sea.","海","うみ","sea"],
+  ["売","sell","バイ","う(る)","stand ＋ shell money","A scholar's stand over shell money — selling.","売る","うる","to sell"],
+  ["知","know","チ","し(る)","arrow ＋ mouth","An arrow swift as a spoken word — knowing.","知る","しる","to know"],
+  ["道","road, way","ドウ","みち","head ＋ road","A head leading the feet down the road — the way.","道","みち","road"],
+  ["集","gather","シュウ","あつ(まる), あつ(める)","bird ＋ tree","Birds settling on one tree — a gathering.","集める","あつめる","to collect"],
+  ["別","separate","ベツ","わ(ける)","bone ＋ knife","A bone separated by a knife — parting.","別れる","わかれる","to part, separate"],
+  ["物","thing","ブツ, モツ","もの","cattle ＋ thing","Cattle as the oldest measure of wealth — things.","食べ物","たべもの","food"],
+  ["使","use","シ","つか(う)","person ＋ order","A person sent off with orders — to use, dispatch.","使う","つかう","to use"],
+  ["品","goods","ヒン, ホン","しな","three vessels","Three vessels lined up for sale — goods.","食品","しょくひん","food products"],
+  ["計","measure, plan","ケイ","はか(る)","words ＋ ten","Words tallied by tens — a plan.","時計","とけい","clock, watch"],
+  ["死","death","シ","し(ぬ)","kneeling figure ＋ remains","A figure kneeling by the remains — death.","死ぬ","しぬ","to die"],
+  ["特","special","トク","—","ox ＋ temple","The temple's ox saved for sacred days — special.","特に","とくに","especially"],
+  ["私","I, private","シ","わたし, わたくし","grain ＋ private","My own grain field — private, me.","私","わたし","I, me"],
+  ["朝","morning","チョウ","あさ","sun ＋ grass ＋ moon","The sun rising through grass, moon still out — morning.","朝ご飯","あさごはん","breakfast"],
+  ["運","carry, luck","ウン","はこ(ぶ)","road ＋ army wheels","Army wheels rolling down the road — transport; luck moving you.","運ぶ","はこぶ","to carry"],
+  ["台","stand, base","ダイ, タイ","—","a platform ＋ base","A raised platform on its base — a stand.","台風","たいふう","typhoon"],
+  ["広","wide","コウ","ひろ(い), ひろ(がる)","a shelter open on one side","A shelter open on one side — wide.","広い","ひろい","spacious"],
+  ["住","live, dwell","ジュウ","す(む)","person ＋ master","A person settled by their lord's post — to live.","住む","すむ","to live"],
+  ["真","true, real","シン","ま(こと)","straight tool ＋ vessel","Shaped straight to its core — true.","写真","しゃしん","photograph"],
+  ["有","have","ユウ, ウ","あ(る)","hand ＋ meat","A hand holding meat — to have.","有名","ゆうめい","famous"],
+  ["口","mouth","コウ, ク","くち","an open mouth","An open mouth, square — mouth.","入り口","いりぐち","entrance"],
+  ["町","town","チョウ","まち","field ＋ street","Fields laid out along a street — a town.","町","まち","town"],
+  ["料","fee, materials","リョウ","—","rice ＋ measure","Rice measured out by the scoop — supplies, a fee.","料理","りょうり","cooking"],
+  ["工","work, craft","コウ, ク","—","a builder's square","A carpenter's square — craft, work.","大工","だいく","carpenter"],
+  ["建","build","ケン","た(てる), た(つ)","brush ＋ ground path","A brush sketching the plan on the ground — to build.","建てる","たてる","to build"],
+  ["急","hurry, sudden","キュウ","いそ(ぐ)","crouching figure ＋ heart","A crouching figure whose heart races — urgent.","急ぐ","いそぐ","to hurry"],
+  ["送","send","ソウ","おく(る)","road ＋ a hand-off","Walking something along to its door — to send.","送る","おくる","to send"],
+  ["身","body, self","シン","み","a person's torso","A figure turned to show its bulk — the body.","身長","しんちょう","height"],
+  ["切","cut","セツ, サイ","き(る), き(れる)","seven ＋ knife","Seven strokes of the knife — cut.","切符","きっぷ","ticket"],
+  ["転","turn, revolve","テン","ころ(がる), ころ(ぶ)","cart ＋ tumble","A cart tipping over — to turn, to tumble.","自転車","じてんしゃ","bicycle"],
+  ["研","polish, research","ケン","み(がく)","stone ＋ opening","A stone that opens a sharp edge — to grind, to study.","研究","けんきゅう","research"],
+  ["足","foot, enough","ソク","あし, た(りる)","knee ＋ foot","A knee above a foot — leg.","足","あし","foot, leg"],
+  ["究","investigate","キュウ","きわ(める)","cave ＋ nine","Probing deep into the cave — to study thoroughly.","究極","きゅうきょく","the ultimate"],
+  ["楽","fun, music","ガク, ラク","たの(しい), たの(しむ)","frame ＋ bells","Bells hung on a wooden frame — music, joy.","音楽","おんがく","music"],
+  ["起","wake, rise","キ","お(きる), お(こす)","run ＋ mark","Setting off running at the mark — to rise, to start.","起きる","おきる","to wake up"],
+  ["着","wear, arrive","チャク, ジャク","き(る), つ(く)","figure ＋ coat","A coat draped on a figure — to wear; to arrive.","着物","きもの","kimono"],
+  ["店","shop","テン","みせ","awning ＋ stall mark","A stall under an awning — a shop.","店","みせ","shop"],
+  ["病","sick, illness","ビョウ","や(む), や(まい)","sickness ＋ bed mark","A bedridden figure under sickness — illness.","病院","びょういん","hospital"],
+  ["悪","bad, evil","アク, オ","わる(い)","heart ＋亚","A crooked heart — bad.","悪い","わるい","bad"],
+  ["暗","dark","アン","くら(い)","sun ＋ sound","The sun with no sound — dark.","暗い","くらい","dark"],
+  ["医","doctor, medicine","イ","—","arrow ＋ vessel","An arrow removing illness — medicine.","医者","いしゃ","doctor"],
+  ["以","by means of","イ","—","person ＋ direction","A person directed — by means of.","以上","いじょう","more than"],
+  ["引","pull, draw","イン","ひ(く), ひ(ける)","bow ＋ line","A bow pulling — pull.","引く","ひく","to pull"],
+  ["院","institution","イン","—","hill ＋ complete","A completed building on a hill — institution.","病院","びょういん","hospital"],
+  ["運","carry, luck","ウン","はこ(ぶ)","road ＋ army","Army on the road — carry.","運ぶ","はこぶ","to carry"],
+  ["映","reflect, project","エイ","うつ(す), は(える)","sun ＋ center","Sun centered — reflect.","映画","えいが","movie"],
+  ["遠","far","エン","とお(い)","road ＋ long","A long road — far.","遠い","とおい","far"],
+  ["屋","roof, shop","オク","や","person ＋ arrive","A person arriving under a roof — shop.","本屋","ほんや","bookstore"],
+  ["音","sound","オン, イン","おと, ね","sound","A sound — sound.","音楽","おんがく","music"],
+  ["歌","song, sing","カ","うた, うた(う)","song","A song — song.","歌","うた","song"],
+  ["夏","summer","カ","なつ","sun ＋ page","Sun on a page — summer.","夏","なつ","summer"],
+  ["家","house","カ, ケ","いえ, や","roof ＋ pig","A roof over livestock — home.","家族","かぞく","family"],
+  ["回","turn, times","カイ","まわ(す)","enclosure ＋ mouth","A mouth going around — turn.","一回","いっかい","one time"],
+  ["界","world","カイ","—","field ＋ boundary","The bounded field — world.","世界","せかい","world"],
+  ["館","building, hall","カン","—","food ＋ official","An official's food hall — building.","図書館","としょかん","library"],
+  ["漢","China, Sino-","カン","—","water ＋ grass ＋ man","The great river — China.","漢字","かんじ","kanji"],
+  ["寒","cold","カン","さむ(い)","roof ＋ ice","Ice under a roof — cold.","寒い","さむい","cold"],
+  ["顔","face","ガン","かお","face","A face — face.","顔","かお","face"],
+  ["帰","return","キ","かえ(る), かえ(す)","knife ＋ broom","Sweeping away to return home.","帰る","かえる","to return"],
+  ["気","spirit","キ, ケ","—","steam ＋ rice","Steam rising from rice — spirit.","元気","げんき","healthy"],
+  ["牛","cow","ギュウ","うし","cow","A cow — cow.","牛","うし","cow"],
+  ["去","leave, past","キョ, コ","さ(る)","earth ＋ elbow","Elbow pushing off the earth — leave.","去年","きょねん","last year"],
+  ["強","strong","キョウ, ゴウ","つよ(い), つよ(まる)","bow ＋ insect","A bow and insect — strong.","強い","つよい","strong"],
+  ["近","near","キン","ちか(い)","road ＋ axe","An axe on the road — near.","近い","ちかい","near"],
+  ["銀","silver","ギン","—","metal ＋ limit","Metal at its limit — silver.","銀","ぎん","silver"],
+  ["区","district, ward","ク","—","box ＋ crossing","A crossed box — district.","区","く","ward"],
+  ["兄","older brother","ケイ, キョウ","あに","mouth ＋ legs","A mouth on legs — older brother.","兄","あに","older brother"],
+  ["軽","light","ケイ","かる(い), かろ(やか)","car ＋ hand","A car light to the hand — light.","軽い","かるい","light"],
+  ["犬","dog","ケン","いぬ","dog","A dog — dog.","犬","いぬ","dog"],
+  ["県","prefecture","ケン","—","eye ＋ small","An eye watching a small region — prefecture.","県","けん","prefecture"],
+  ["験","test, verify","ケン","—","horse ＋ check","A horse being checked — test.","試験","しけん","exam"],
+  ["工","craft, work","コウ, ク","—","builder's square","A carpenter's square — craft.","工業","こうぎょう","industry"],
+  ["光","light","コウ","ひかり, ひか(る)","fire ＋ legs","Fire on legs — light.","光","ひかり","light"],
+  ["好","like, fond","コウ","す(き), この(む)","woman ＋ child","A woman with a child — like.","好き","すき","like"],
+  ["合","fit, match","ゴウ, ガ","あ(う), あ(わせる)","person ＋ mouth","A person with a mouth — fit.","合う","あう","to fit"],
+  ["黒","black","コク","くろ(い)","black","A blackened figure — black.","黒い","くろい","black"],
+  ["困","trouble","コン","こま(る)","tree ＋ enclosure","A tree trapped — trouble.","困る","こまる","to be troubled"],
+  ["鳥","bird","チョウ","とり","bird","A bird — bird.","鳥","とり","bird"],
+  ["黒","black","コク","くろ(い)","black","A blackened figure — black.","黒い","くろい","black"],
+  ["作","make, produce","サク, サ","つく(る)","person ＋ previous","A person making something — make.","作る","つくる","to make"],
+  ["紙","paper","シ","かみ","thread ＋ family","Threads of a family — paper.","紙","かみ","paper"],
+  ["寺","temple","ジ","てら","earth ＋ inch","An inch of earth — temple.","お寺","おてら","temple"],
+  ["時","time, hour","ジ","とき","sun ＋ temple","The sun at the temple — time.","時間","じかん","time"],
+  ["室","room","シツ","むろ","roof ＋ arrive","A roof you arrive at — room.","教室","きょうしつ","classroom"],
+  ["自","self","ジ","みずか(ら)","nose","A nose — self.","自分","じぶん","oneself"],
+  ["式","ceremony","シキ","—","craft ＋ work","A crafted work — ceremony.","式","しき","ceremony"],
+  ["重","heavy","ジュウ, チョウ","おも(い), かさ(ねる)","vehicle ＋ east","A vehicle going east — heavy.","重い","おもい","heavy"],
+  ["宿","inn, lodge","シュク","やど","roof ＋ person","A roof for a person — inn.","宿題","しゅくだい","homework"],
+  ["暑","hot","ショ","あつ(い)","sun ＋ person","Sun on a person — hot.","暑い","あつい","hot"],
+  ["春","spring","シュン","はる","sun ＋ tree","Sun on trees — spring.","春","はる","spring"],
+  ["秋","autumn","シュウ","あき","rice ＋ fire","Rice and fire — autumn.","秋","あき","autumn"],
+  ["冬","winter","トウ","ふゆ","ice ＋ end","Ice at the end — winter.","冬","ふゆ","winter"],
+  ["夏","summer","カ","なつ","sun ＋ page","Sun on a page — summer.","夏","なつ","summer"],
+  ["夕","evening","セキ","ゆう","moon ＋ evening","The crescent moon — evening.","夕方","ゆうがた","evening"],
+  ["曜","weekday","ヨウ","—","sun ＋ wings","The sun's wings — weekday.","曜日","ようび","day of week"],
+  ["少","few, little","ショウ","すこ(し), すく(ない)","small ＋ slash","Small slashes — few.","少し","すこし","a little"],
+  ["多","many","タ","おお(い)","two evenings","Two evenings — many.","多い","おおい","many"],
+  ["太","thick","タイ","ふと(い)","big ＋ dot","A big dot — thick.","太い","ふとい","thick"],
+  ["短","short","タン","みじか(い)","arrow ＋ bean","An arrow and a bean — short.","短い","みじかい","short"],
+  ["長","long","チョウ","なが(い)","long hair","Long hair — long.","長い","ながい","long"],
+  ["高","high, expensive","コウ","たか(い)","tall building","A tall building — high.","高い","たかい","high"],
+  ["安","cheap, safe","アン","やす(い)","roof ＋ woman","A woman under a roof — safe, cheap.","安い","やすい","cheap"],
+  ["新","new","シン","あたら(しい), あら(た)","axe ＋ tree","An axe on a tree — new.","新しい","あたらしい","new"],
+  ["古","old","コ","ふる(い)","old ＋ mouth","An old mouth — old.","古い","ふるい","old"],
+  ["悪","bad, evil","アク, オ","わる(い)","heart ＋亚","A crooked heart — bad.","悪い","わるい","bad"],
+  ["強","strong","キョウ, ゴウ","つよ(い), つよ(まる)","bow ＋ insect","A bow and insect — strong.","強い","つよい","strong"],
+  ["弱","weak","ジャク","よわ(い)","bow ＋ feathers","A bow with weak feathers — weak.","弱い","よわい","weak"],
+  ["速","fast","ソク","はや(い)","road ＋ bundle","A bundle on the road — fast.","速い","はやい","fast"],
+  ["遅","slow, late","チ","おそ(い), おく(れる)","road ＋ sheep","A sheep on the road — slow.","遅い","おそい","slow"],
+  ["暗","dark","アン","くら(い)","sun ＋ sound","The sun with no sound — dark.","暗い","くらい","dark"],
+  ["明","bright","メイ, ミョウ","あか(るい), あき(らか)","sun ＋ moon","Sun and moon — bright.","明るい","あかるい","bright"],
+  ["広","wide","コウ","ひろ(い), ひろ(がる)","shelter ＋ open","An open shelter — wide.","広い","ひろい","wide"],
+  ["狭","narrow","キョウ","せま(い)","animal ＋夹","An animal squeezed — narrow.","狭い","せまい","narrow"],
+  ["静","quiet","セイ","しず(か)","blue ＋争","Blue and peaceful — quiet.","静か","しずか","quiet"],
+  ["動","move","ドウ","うご(く)","heavy ＋ force","Force on a weight — move.","動く","うごく","to move"],
+  ["止","stop","シ","と(まる), と(める)","foot ＋ line","A foot on a line — stop.","止まる","とまる","to stop"],
+  ["歩","walk","ホ","ある(く)","step ＋ few","A few steps — walk.","歩く","あるく","to walk"],
+  ["走","run","ソウ","はし(る)","earth ＋ run","Running on earth — run.","走る","はしる","to run"],
+  ["飛","fly","ヒ","と(ぶ), と(ばす)","flight","A bird in flight — fly.","飛ぶ","とぶ","to fly"],
+  ["泳","swim","エイ","およ(ぐ)","water ＋ eternal","Eternal water — swim.","泳ぐ","およぐ","to swim"],
+  ["乗","ride","ジョウ","の(る), の(せる)","vehicle ＋ tree","A vehicle on a tree — ride.","乗る","のる","to ride"],
+  ["降","descend","コウ","お(りる), ふ(る)","hill ＋ descent","Descending a hill — descend.","降りる","おりる","to descend"],
+  ["転","turn","テン","ころ(ぶ), ころ(がる)","cart ＋ tumble","A cart tumbling — turn.","転ぶ","ころぶ","to fall"],
+  ["曲","bend, music","キョク","ま(がる), ま(げる)","field ＋ tool","A tool in the field — bend.","曲がる","まがる","to bend"],
+  ["折","fold, break","セツ","お(る), お(れる)","hand ＋ axe","A hand with an axe — fold.","折る","おる","to fold"],
+  ["押","push","オウ","お(す), お(さえる)","hand ＋甲","A hand pushing — push.","押す","おす","to push"],
+  ["引","pull","イン","ひ(く), ひ(ける)","bow ＋ line","A bow pulling — pull.","引く","ひく","to pull"],
+  ["開","open","カイ","あ(ける), ひら(く)","gate ＋ hands","Two hands on a gate — open.","開ける","あける","to open"],
+  ["閉","close","ヘイ","し(める), と(じる)","gate ＋ bar","A bar on a gate — close.","閉める","しめる","to close"],
+  ["出","exit","シュツ","で(る), だ(す)","mountain ＋ mountain","Two mountains — exit.","出る","でる","to exit"],
+  ["立","stand","リツ","た(つ), た(てる)","person ＋ ground","A person on the ground — stand.","立つ","たつ","to stand"],
+  ["座","sit","ザ","すわ(る)","roof ＋ person","A person under a roof — sit.","座る","すわる","to sit"],
+  ["寝","sleep","シン","ね(る), ね(かす)","roof ＋ bed","A bed under a roof — sleep.","寝る","ねる","to sleep"],
+  ["起","wake","キ","お(きる), お(こす)","run ＋ mark","Running to the mark — wake.","起きる","おきる","to wake"],
+  ["着","wear, arrive","チャク, ジャク","き(る), つ(く)","figure ＋ coat","A coat on a figure — wear.","着る","きる","to wear"],
+  ["脱","remove","ダツ","ぬ(ぐ)","body ＋ exchange","Body exchanging clothes — remove.","脱ぐ","ぬぐ","to remove"],
+  ["洗","wash","セン","あら(う)","water ＋ first","First water — wash.","洗う","あらう","to wash"],
+  ["掃","sweep","ソウ","は(く)","hand ＋ broom","A hand with a broom — sweep.","掃除","そうじ","cleaning"],
+  ["拭","wipe","ショク","ふ(く)","hand ＋ cloth","A hand with a cloth — wipe.","拭く","ふく","to wipe"],
+  ["登","climb","トウ","のぼ(る)","stool ＋ bean","A stool on a bean — climb.","登る","のぼる","to climb"],
+  ["内","inside","ナイ","うち","person ＋ enclosure","A person enclosed — inside.","内","うち","inside"],
+  ["海","sea","カイ","うみ","water ＋ every","Every drop — sea.","海","うみ","sea"],
+  ["森","forest","シン","もり","tree ＋ tree","Many trees — forest.","森","もり","forest"],
+  ["林","woods","リン","はやし","tree ＋ tree","Two trees — woods.","林","はやし","woods"],
+  ["草","grass","ソウ","くさ","grass","Grass — grass.","草","くさ","grass"],
+  ["犬","dog","ケン","いぬ","dog","A dog — dog.","犬","いぬ","dog"],
+  ["猫","cat","ビョウ","ねこ","animal ＋苗","An animal in the field — cat.","猫","ねこ","cat"],
+  ["鳥","bird","チョウ","とり","bird","A bird — bird.","鳥","とり","bird"],
+  ["馬","horse","バ","うま","horse","A horse — horse.","馬","うま","horse"],
+  ["牛","cow","ギュウ","うし","cow","A cow — cow.","牛","うし","cow"],
+  ["豚","pig","トン","ぶた","pig","A pig — pig.","豚","ぶた","pig"],
+  ["羊","sheep","ヨウ","ひつじ","sheep","A sheep — sheep.","羊","ひつじ","sheep"],
+  ["虫","insect","チュウ","むし","insect","An insect — insect.","虫","むし","insect"],
+  ["羽","feather","ウ","はね","feather","Two feathers — feather.","羽","はね","feather"],
+  ["毛","hair","モウ","け","hair","A strand of hair — hair.","毛","け","hair"],
+  ["鼻","nose","ビ","はな","nose","A nose — nose.","鼻","はな","nose"],
+  ["歯","tooth","シ","は","tooth","A tooth — tooth.","歯","は","tooth"],
+  ["顔","face","ガン","かお","face","A face — face.","顔","かお","face"],
+  ["頭","head","トウ","あたま","head","A head — head.","頭","あたま","head"],
+  ["首","neck","シュ","くび","neck","A neck — neck.","首","くび","neck"],
+  ["肩","shoulder","ケン","かた","shoulder","A shoulder — shoulder.","肩","かた","shoulder"],
+  ["腕","arm","ワン","うで","arm","An arm — arm.","腕","うで","arm"],
+  ["指","finger","シ","ゆび","finger","A finger — finger.","指","ゆび","finger"],
+  ["心","heart","シン","こころ","heart","A heart — heart.","心","こころ","heart"],
+  ["体","body","タイ","からだ","body","A body — body.","体","からだ","body"],
+  ["元","origin","ゲン, ガン","もと","origin","An origin — origin.","元","もと","origin"],
+  ["力","power","リョク, リキ","ちから","power","A flexed arm — power.","力","ちから","power"],
+  ["声","voice","セイ","こえ","voice","A voice — voice.","声","こえ","voice"],
+  ["音","sound","オン, イン","おと, ね","sound","A sound — sound.","音","おと","sound"],
+  ["色","color","ショク, シキ","いろ","color","A color — color.","色","いろ","color"],
+  ["形","shape","ケイ, ギョウ","かたち, かた","shape","A shape — shape.","形","かたち","shape"],
+  ["数","number","スウ","かず, かぞ(える)","number","A number — number.","数","かず","number"],
+  ["量","quantity","リョウ","はか(る)","quantity","A quantity — quantity.","量","りょう","quantity"]
+].map(mk("N4"));
+
+const N3 = [
+  ["政","politics","セイ, ショウ","まつりごと","straight ＋ rod of authority","Straight rule carried by a rod of office — politics.","政治","せいじ","politics"],
+  ["議","deliberation","ギ","—","words ＋ justice","Words weighed in a hall of justice — debate.","会議","かいぎ","meeting"],
+  ["民","people","ミン","たみ","clan ＋ eye","A folk watched over by one rule — the people.","国民","こくみん","citizens"],
+  ["連","connect","レン","つ(れる)","cart ＋ road","A line of carts moving together — connected.","連休","れんきゅう","consecutive holidays"],
+  ["対","opposite, versus","タイ, ツイ","—","a measuring hand matched","A measuring hand matched against another — a pair facing off.","反対","はんたい","opposition"],
+  ["部","section","ブ","—","a meeting place ＋ village edge","A gathering place at the edge of town — a section.","部屋","へや","room"],
+  ["合","fit, join","ゴウ, ガッ","あ(う), あ(わせる)","lid ＋ vessel","A lid settling on a vessel — things fitting together.","合う","あう","to fit, match"],
+  ["市","city, market","シ","いち","banner ＋ market stand","A banner flying over a market stand — the marketplace.","市場","いちば","market"],
+  ["内","inside","ナイ, ダイ","うち","person enclosed","A person kept within the borders — inside.","国内","こくない","domestic"],
+  ["相","mutual, aspect","ソウ, ショウ","あい","tree ＋ eye","Studying a tree for its timber — judging; then, mutual.","相談","そうだん","consultation"],
+  ["定","fix, determine","テイ, ジョウ","さだ(める), さだ(まる)","roof ＋ level ground","Settled under a roof, level and sure — fixed.","予定","よてい","plan, schedule"],
+  ["回","times, turn","カイ, エ","まわ(る), まわ(す)","small mouth in a big one","A small circle turning inside a big one — times, turns.","回る","まわる","to turn, revolve"],
+  ["選","choose","セン","えら(ぶ)","sifting ＋ road","Sifting the good from the rest along the road — to choose.","選ぶ","えらぶ","to choose"],
+  ["米","rice","ベイ, マイ","こめ","grain stalks spreading","Grain stalks fanning in four directions — rice.","米","こめ","rice"],
+  ["実","real, truth","ジツ","み, みの(る)","roof ＋ treasure","A house full of real treasure — truth, fruit.","実は","じつは","actually"],
+  ["関","connection, barrier","カン","せき","gate ＋ threads","A checkpoint gate linking the roads — connection.","関係","かんけい","relationship"],
+  ["決","decide","ケツ","き(める), き(まる)","water ＋ a gap","Water breaking through the gap — decided.","決める","きめる","to decide"],
+  ["全","whole","ゼン","まった(く), すべ(て)","roof ＋ jewel","A jewel kept whole under the roof — complete.","全部","ぜんぶ","everything"],
+  ["表","surface, express","ヒョウ","おもて, あら(わす)","garment ＋ hair","The outer side of a garment — the surface.","発表","はっぴょう","announcement"],
+  ["戦","war, battle","セン","たたか(う), いくさ","single fighter ＋ weapon","One fighter facing weapons — battle.","戦う","たたかう","to fight"],
+  ["経","pass through","ケイ, キョウ","た(つ), へ(る)","thread ＋ ground","Loom threads running straight through time — to pass.","経験","けいけん","experience"],
+  ["与","give","ヨ","あた(える)","hands passing over","Hands passing something across — to give.","与える","あたえる","to give"],
+  ["供","offer, serve","キョウ, ク","そな(える), とも","person ＋ together","A person standing beside the offering — to serve.","提供","ていきょう","to provide"],
+  ["役","role, service","ヤク, エキ","—","road ＋ spear","A figure armed and on duty — a role.","役に立つ","やくにたつ","to be useful"],
+  ["構","structure","コウ","かま(える), かま(う)","tree ＋ frame","Timber framed together — structure.","構う","かまう","to mind, care"],
+  ["割","divide","カツ","わ(る), わ(れる)","harm ＋ knife","A knife cutting through harm — to split.","割引","わりびき","discount"],
+  ["費","expense","ヒ","つい(やす)","shell money ＋ bow-spent","Shell money bent and spent — expense.","費用","ひよう","expenses"],
+  ["付","attach","フ","つ(く), つ(ける)","person ＋ measuring hand","A person handing it over, fixed in place — to attach.","付ける","つける","to attach"],
+  ["由","reason, from","ユ, ユイ","より, よ(る)","path out of a field","A path leading out of the field — where things come from.","自由","じゆう","freedom"],
+  ["難","difficult","ナン","むずか(しい), かた(い)","bird in distress","A bird caught in trouble — difficult.","難しい","むずかしい","difficult"],
+  ["優","gentle, superior","ユウ, ウ","やさ(しい), すぐ(れる)","person ＋ tender care","A person who cares deeply — gentle, excellent.","優しい","やさしい","kind"],
+  ["夫","husband","フ, フウ","おっと","big ＋ hairpin","Big grown-up with a hairpin through the hair — husband.","夫","おっと","husband"],
+  ["収","obtain, harvest","シュウ","おさ(める)","a hand gathering","A hand gathering the crop in — harvest, income.","収入","しゅうにゅう","income"],
+  ["断","cut off, refuse","ダン","た(つ), ことわ(る)","grain ＋ axe","An axe cutting clean through the grain — to sever.","断る","ことわる","to refuse"],
+  ["石","stone","セキ, シャク","いし","cliff ＋ rock mouth","A rock at the foot of the cliff — stone.","石鹸","せっけん","soap"],
+  ["違","differ","イ","ちが(う), ちが(える)","road ＋ different path","Walking a different path — to differ.","違う","ちがう","to differ"],
+  ["消","extinguish","ショウ","き(える), け(す)","water ＋ fading","Water wearing things thin — fading, extinguishing.","消しゴム","けしゴム","eraser"],
+  ["神","god, spirit","シン, ジン","かみ","altar ＋ lightning","An altar where lightning strikes — the divine.","神社","じんじゃ","shrine"],
+  ["番","number, turn","バン","つが(い)","tracks ＋ field","Animal tracks counted across the field — number, turn.","一番","いちばん","number one"],
+  ["規","standard, rule","キ","—","compass sight ＋ see","Setting the sight and seeing straight — standards.","規則","きそく","rules"],
+  ["術","technique","ジュツ","—","road ＋ skill","A skill practiced along the way — technique.","技術","ぎじゅつ","technology"],
+  ["備","equip, prepare","ビ","そな(える)","person ＋ stores","A person with stores laid out ready — prepared.","備える","そなえる","to prepare"],
+  ["宅","house, home","タク","—","roof ＋ post","A roof on its supporting post — a dwelling.","宅配","たくはい","home delivery"],
+  ["害","harm","ガイ","—","roof ＋ falling trouble","Trouble falling on the house — harm.","災害","さいがい","disaster"],
+  ["配","distribute","ハイ","くば(る)","wine vessel ＋ portion","Wine poured out for everyone — distribution.","配達","はいたつ","delivery"],
+  ["警","warn","ケイ","—","reverence ＋ words","Words spoken with grave respect — a warning.","警察","けいさつ","police"],
+  ["育","raise","イク","そだ(つ), そだ(てる)","newborn ＋ flesh","A newborn growing flesh — raising young life.","育てる","そだてる","to raise"],
+  ["席","seat","セキ","—","hall ＋ mat","A mat spread in the hall — a seat.","出席","しゅっせき","attendance"],
+  ["訪","visit","ホウ","おとず(れる), たず(ねる)","words ＋ direction","Words exchanged on arriving — a visit.","訪れる","おとずれる","to visit"],
+  ["残","remain","ザン, サン","のこ(る), のこ(す)","bones ＋ knife","Bones split by the knife — what remains.","残る","のこる","to remain"],
+  ["想","thought, imagine","ソウ","おも(う)","picture ＋ heart","A picture held in the heart — imagination.","想像","そうぞう","imagination"],
+  ["念","thought, wish","ネン","—","now ＋ heart","A thought held right now upon the heart.","残念","ざんねん","unfortunate"],
+  ["労","labor","ロウ","—","canopy ＋ strength","Strength spent under a canopy — labor.","労働","ろうどう","labor"],
+  ["例","example","レイ","たと(える)","person ＋ row","A person standing in the row of precedent — an example.","例えば","たとえば","for example"],
+  ["然","so, nature","ゼン, ネン","—","meat ＋ dog ＋ fire","A dog by roasting meat over fire — the way of nature.","自然","しぜん","nature"],
+  ["限","limit","ゲン","かぎ(る), かぎ(り)","hill path ＋ blocked eye","The path ends where the eye is blocked — the limit.","限る","かぎる","to limit"],
+  ["追","chase","ツイ","お(う)","pressing after ＋ road","Pressing after someone along the road — pursuit.","追う","おう","to chase"],
+  ["商","commerce","ショウ","あきな(う)","mark ＋ stock frame","Goods under an awning, marked for sale — commerce.","商品","しょうひん","merchandise"],
+  ["葉","leaf","ヨウ","は","plant ＋ season ＋ wood","Plants in season on the wood — leaves.","葉","は","leaf"],
+  ["伝","transmit","デン, テン","つた(える), つた(わる)","person ＋ passing on","A person passing word down the line — to convey.","伝える","つたえる","to convey"],
+  ["欠","lack","ケツ, ケン","か(ける), か(く)","open mouth ＋ breath","A mouth open wide, breath escaping — a yawn, a lack.","欠席","けっせき","absence"],
+  ["寝","sleep","シン","ね(る), ね(かす)","roof ＋ bed","A bed under a roof, work set aside — sleep.","寝る","ねる","to sleep"],
+  ["暮","live, dusk","ボ","く(らす), く(れる)","sun sinking into grass","The sun sinking into the grass — dusk; where one lives.","暮らす","くらす","to live"],
+  ["活","lively","カツ","—","water ＋ tongue","Water on the tongue — lively speech, activity.","活動","かつどう","activity"],
+  ["欲","want","ヨク","ほ(しい), ほっ(する)","valley ＋ heart","Hunger in the heart, deep as a valley — desire.","欲しい","ほしい","to want"],
+  ["失","lose","シツ","う(しなう)","hand ＋ slipping","A hand letting something slip — losing.","失敗","しっぱい","failure"],
+  ["愛","love","アイ","いと(しい)","hand ＋ covered heart","A hand holding a heart covered gently — love.","愛","あい","love"],
+  ["婚","marriage","コン","—","woman ＋ dusk","A woman at dusk — the old wedding hour.","結婚","けっこん","marriage"],
+  ["面","face, surface","メン, ベン","—","enclosure ＋ face","A face ringed by an outline — surface, face.","画面","がめん","screen"],
+  ["原","original, plain","ゲン","はら","spring ＋ open land","A spring opening onto the plain — the source.","原因","げんいん","cause"],
+  ["機","machine, opportunity","キ","はた","wood ＋ loom parts","Wooden loom parts — machinery; the moment things turn.","機械","きかい","machine"],
+  ["薬","medicine","ヤク","くすり","grass ＋ joy","Grass that brings joy — medicine.","薬","くすり","medicine"],
+  ["覚","remember, awaken","カク","おぼ(える), さ(める)","cover ＋ see","The eye opening beneath the cover — realizing, remembering.","覚える","おぼえる","to memorize"],
+  ["法","law, method","ホウ","—","water ＋ justice","Water flowing evenly, justice holding — law.","文法","ぶんぽう","grammar"],
+  ["都","capital, city","ト, ツ","みやこ","settlement ＋ village edge","A great settlement at the road's edge — the capital.","都会","とかい","city"],
+  ["交","exchange, mix","コウ","ま(じわる), か(う)","crossed legs","A figure with legs crossed over — mixing, meeting.","交通","こうつう","traffic"],
+  ["雑","miscellaneous","ザツ, ゾウ","—","many birds ＋ together","Many birds thrown into one pen — miscellaneous.","雑誌","ざっし","magazine"],
+  ["誤","mistake","ゴ","あやま(る)","words ＋ missed mark","Words that miss the mark — an error.","誤解","ごかい","misunderstanding"],
+  ["互","mutual","ゴ","たが(い)","interlocking hooks","Two hooks taking each other's turn — mutual.","お互い","おたがい","each other"],
+  ["首","head, neck","シュ","くび","face ＋ hair top","A face with the hair marked on top — the head.","首","くび","neck"],
+  ["要","need, essential","ヨウ","い(る), かなめ","sash ＋ woman","The pinned waist of a figure — the vital point.","必要","ひつよう","necessary"],
+  ["否","no, deny","ヒ","いな","not ＋ mouth","A mouth that will not — denial.","否定","ひてい","denial"],
+  ["次","next","ジ, シ","つ(ぎ), つ(ぐ)","one after another","One yawn after another — one thing following the next.","次","つぎ","next"],
+  ["号","number, mark","ゴウ","—","mouth ＋ outstretched call","A mouth crying out — a call, a number.","番号","ばんごう","number"],
+  ["晩","evening","バン","—","sun gone ＋ release","The sun released from the sky — evening.","晩ご飯","ばんごはん","dinner"],
+  ["参","participate","サン, シン","まい(る)","bent figure ＋ strands","A figure bowing low in ceremony — to join.","参加","さんか","participation"],
+  ["数","number, count","スウ, ス","かず, かぞ(える)","counting hand ＋ tally","A hand tallying the grain — counting.","数字","すうじ","digit, number"],
+  ["際","occasion, edge","サイ","きわ","hill ＋ festival","Where the path meets the festival — the edge, the occasion.","国際","こくさい","international"],
+  ["君","you, lord","クン","きみ","staff ＋ mouth","A staff of office held over the people — lord; now, you.","君","きみ","you"],
+  ["老","old","ロウ","お(いる), ふ(ける)","elder ＋ long hair","An elder bent, with long hair — old age.","老人","ろうじん","elderly person"],
+  ["昔","olden times","セキ, シャク","むかし","days piled in layers","Days piled upon days — long, long ago.","昔","むかし","olden times"],
+  ["他","other","タ","ほか","person ＋ also","A person over there, also here — the other.","他の","ほかの","other"],
+  ["観","view, observe","カン","み(る)","herons ＋ see","Watching the herons — observing, a view.","観光","かんこう","sightseeing"],
+  ["過","over, past","カ","す(ぎる), あやま(つ)","milestone ＋ road","Passing the milestone on the road — going beyond.","過ぎる","すぎる","to exceed, pass"],
+  ["倒","fall over","トウ","たお(れる), たお(す)","person ＋ toppled","A person arriving headfirst — toppled over.","倒れる","たおれる","to fall over"],
+  ["痛","pain","ツウ","いた(い), いた(む)","sickness ＋ ache","An ache lying in the sickbed — pain.","痛い","いたい","painful"],
+ 
+  ["最","utmost, most","サイ","もっと(も)","sun ＋ taking","The sun watching one act seize the very top spot — the utmost.","最近","さいきん","recently"],
+  ["現","appear, present","ゲン","あらわ(れる), あらわ(す)","king ＋ see","A king's jewel revealed to the eye — appearing now.","現在","げんざい","the present time"],
+  ["調","investigate, tune","チョウ","ととの(える), しら(べる)","words ＋ round","Words checked round and round until they match — to tune, to investigate.","調べる","しらべる","to investigate"],
+  ["化","transform","カ, ケ","ば(ける), ば(かす)","person ＋ upside-down person","A person flipped over becomes something new — transformation.","変化","へんか","change"],
+  ["当","hit, right","トウ","あ(てる), あ(たる)","small ＋ field","A stone landing square in the field — hitting the mark.","本当","ほんとう","really, true"],
+  ["約","promise","ヤク","つづ(まる)","thread ＋ ladle","Threads tied into a tight bundle, kept true — a promise.","予約","よやく","reservation"],
+  ["性","nature, sex","セイ, ショウ","—","heart ＋ life","The heart's inborn life — one's nature.","性格","せいかく","personality"],
+  ["的","target","テキ","まと","white ＋ ladle","A white spot marked out and aimed at — the target.","目的","もくてき","purpose"],
+  ["制","system, control","セイ","—","cloth ＋ knife","Cloth cut to a fixed pattern — a system, control.","制度","せいど","a system"],
+  ["治","govern, cure","ジ, チ","おさ(める), なお(す), なお(る)","water ＋ platform","Water tamed and channeled along a set course — to govern, to heal.","治る","なおる","to be cured"],
+  ["務","task, duty","ム","つと(める)","strength ＋ spear","Striving with all one's strength against a task — duty.","事務","じむ","office work"],
+  ["成","become","セイ, ジョウ","な(る)","halberd ＋ shape","A shape completed by the halberd's final stroke — to become.","成功","せいこう","success"],
+  ["期","period","キ, ゴ","—","moon ＋ base","A moon cycle marking a fixed span of time — a period.","時期","じき","time, period"],
+  ["取","take","シュ","と(る)","ear ＋ hand","A hand taking an ear as trophy — to take.","取る","とる","to take"],
+  ["和","harmony","ワ, オ","やわ(らぐ), なご(む)","grain ＋ mouth","Grain shared so every mouth is fed — harmony.","平和","へいわ","peace"],
+  ["平","flat, calm","ヘイ, ビョウ","たい(ら), ひら","a level scale","A scale resting perfectly level — flat, calm.","平日","へいじつ","weekday"],
+  ["加","add","カ","くわ(わる), くわ(える)","strength ＋ mouth","Strength lending its voice to the mix — to add.","加える","くわえる","to add"],
+  ["受","receive","ジュ","う(ける), う(かる)","claw ＋ cover ＋ hand","A hand reaching under a cover to take what's offered — to receive.","受ける","うける","to receive"],
+  ["続","continue","ゾク","つづ(ける), つづ(く)","thread ＋ sell","Thread spun on and on without a break — to continue.","続く","つづく","to continue"],
+  ["進","advance","シン","すす(む)","bird ＋ road","A bird flying steadily onward along the road — to advance.","進む","すすむ","to advance"],
+  ["記","write down","キ","しる(す)","words ＋ self","Words set down as one's own record — to note.","日記","にっき","diary"],
+  ["初","beginning","ショ","はじ(め), はつ, そ(める)","clothes ＋ knife","A knife's first cut into new cloth — the beginning.","初めて","はじめて","for the first time"],
+  ["指","finger, point","シ","ゆび, さ(す)","hand ＋ decree","A hand issuing its order by pointing — the finger, to indicate.","指す","さす","to point"],
+  ["権","right, authority","ケン, ゴン","—","tree ＋ scale","A tree used as the balance's counterweight — authority.","権利","けんり","a right"],
+  ["支","branch, support","シ","ささ(える)","hand ＋ ten","Ten twigs held steady by one hand — to support.","支える","ささえる","to support"],
+  ["産","give birth, produce","サン","う(む), う(まれる)","life ＋ cliff","Life brought forth from the earth's cliff — to produce.","生産","せいさん","production"],
+  ["点","point, dot","テン","—","divination ＋ fire","Flecks of fire scattered like dots on the ground — a point.","点数","てんすう","score, points"],
+  ["報","report, repay","ホウ","むく(いる)","servant ＋ hand","A servant's hand returning word of the deed done — to report, repay.","情報","じょうほう","information"],
+  ["済","settle, finish","サイ","す(む), す(ます)","water ＋ already","Water already crossed — the matter settled.","経済","けいざい","economy"],
+  ["共","together","キョウ","とも","two hands lifting together","Two hands raising one thing together — together.","共通","きょうつう","common"],
+  ["得","gain","トク","え(る), う(る)","go ＋ shell ＋ hand","A hand closing on shell-money found along the road — to gain.","得意","とくい","strong point"],
+  ["解","solve","カイ, ゲ","と(ける), と(く)","horn ＋ knife ＋ ox","A knife parting the ox's horn from its head — to take apart, to solve.","理解","りかい","understanding"],
+  ["資","assets","シ","—","next ＋ shell","Shell-money set aside for the next time — capital, assets.","資料","しりょう","materials, data"],
+  ["予","in advance","ヨ, シャ","あらかじ(め)","a plow readied ahead","A plow made ready before the season begins — beforehand.","予報","よほう","forecast"],
+  ["向","facing","コウ","む(く), む(かう)","window ＋ mouth","A face turned toward the window's light — facing.","方向","ほうこう","direction"],
+  ["勝","victory","ショウ","か(つ)","power ＋ moon ＋ vessel","Strength enough to lift and carry off the prize — to win.","勝つ","かつ","to win"],
+  ["告","tell, announce","コク","つ(げる)","cow ＋ mouth","An ox led out and the news called aloud — to announce.","広告","こうこく","advertisement"],
+  ["反","anti-, oppose","ハン, ホン, タン","そ(る), そ(らす)","cliff ＋ hand","A hand pressing back against the cliff face — to oppose.","反応","はんのう","reaction"],
+  ["判","judge","ハン","—","half ＋ knife","A knife splitting the case cleanly in half — to judge.","裁判","さいばん","a trial"],
+  ["認","acknowledge","ニン","みと(める)","words ＋ blade ＋ heart","Words cutting straight to what the heart accepts — to acknowledge.","確認","かくにん","confirmation"],
+  ["利","profit","リ","き(く)","grain ＋ knife","A knife harvesting grain cleanly — profit, advantage.","利用","りよう","utilization"],
+  ["組","assemble","ソ","く(む), くみ","thread ＋ ancestor","Threads from many lines woven together — to assemble, a group.","番組","ばんぐみ","TV program"],
+  ["信","believe","シン","—","person ＋ word","A person standing behind their own word — trust.","自信","じしん","self-confidence"],
+  ["在","exist","ザイ","あ(る)","earth ＋ talent","Talent rooted right here in the earth — to exist.","在庫","ざいこ","stock, inventory"],
+  ["件","matter, case","ケン","くだん","person ＋ cow","A person counting cattle, one case at a time — a matter.","事件","じけん","incident"],
+  ["側","side","ソク","がわ, そば","person ＋ rule","A person standing just beside the rule — the side.","内側","うちがわ","the inside"],
+  ["任","entrust","ニン","まか(せる)","person ＋ burden","A person carrying the weight handed to them — to entrust.","任せる","まかせる","to entrust"],
+  ["引","pull","イン","ひ(く)","bow ＋ line","A bowstring drawn taut — to pull.","引く","ひく","to pull"],
+  ["求","request, demand","キュウ","もと(める)","reaching for fur","Reaching out for a rare, sought-after pelt — to seek, to demand.","要求","ようきゅう","a demand"],
+  ["所","place","ショ","ところ","door ＋ axe","The spot marked by the door and the axe's work — a place.","場所","ばしょ","place"],
+  ["昨","yesterday, previous","サク","—","sun ＋ a little before","The sun that already set — yesterday, before.","昨日","きのう","yesterday"],
+  ["論","argument","ロン","—","words ＋ wheel","Words spun round and round like a wheel — argument, theory.","議論","ぎろん","discussion"],
+  ["官","bureaucrat","カン","—","roof ＋ mound","Officials gathered under one roof on the mound — a government post.","警官","けいかん","police officer"],
+  ["増","increase","ゾウ","ま(す), ふ(える)","earth ＋ layered","Earth piled layer on layer, higher and higher — to increase.","増える","ふえる","to increase"],
+  ["係","person in charge","ケイ","かか(る), かかり","person ＋ thread","A person tied to the thread of duty — the one in charge.","係員","かかりいん","staff member"],
+  ["感","feeling","カン","—","all ＋ heart","The heart moved all at once — a feeling.","感じる","かんじる","to feel"],
+  ["情","emotion","ジョウ, セイ","なさ(け)","heart ＋ blue-green","The heart's true color showing through — emotion.","感情","かんじょう","emotion"],
+  ["投","throw","トウ","な(げる)","hand ＋ short spear","A hand hurling the short spear — to throw.","投げる","なげる","to throw"],
+  ["示","show","ジ, シ","しめ(す)","altar sign","A sign set upon the altar for all to see — to show.","指示","しじ","instruction"],
+  ["変","change","ヘン","か(わる), か(える)","strange threads","Threads tangled into something strange and new — change, unusual.","変わる","かわる","to change"],
+  ["打","hit","ダ","う(つ)","hand ＋ nail","A hand driving the nail home — to strike.","打つ","うつ","to hit"],
+  ["直","straight, honest","チョク, ジキ","なお(す), すぐ","eye ＋ hiding place","An eye that looks straight into every hiding place — honest, direct.","直接","ちょくせつ","directly"],
+  ["両","both","リョウ","—","a balance with two pans","Two pans of a scale hanging level — both.","両方","りょうほう","both"],
+  ["式","ceremony, style","シキ","—","work ＋ stake","Work carried out by the fixed stake of custom — a ceremony, a style.","結婚式","けっこんしき","wedding ceremony"],
+  ["確","certain","カク","たし(か), たし(かめる)","stone ＋ watchful bird","A stone-solid fact, checked like a hawk's eye — certain.","正確","せいかく","accurate"],
+  ["果","fruit, result","カ","は(たす), は(てる)","tree ＋ field of fruit","Fruit hanging heavy from the tree — a result, a fruit.","結果","けっか","result"],
+  ["容","contain","ヨウ","—","roof ＋ valley","A valley sheltered under a roof, holding all within — to contain.","内容","ないよう","contents"],
+  ["必","invariably","ヒツ","かなら(ず)","an arrow through the heart","An arrow through the very heart of the matter — certainly.","必ず","かならず","certainly, without fail"],
+  ["演","perform","エン","—","water ＋ extend","A performance flowing on and on like water — to act, to perform.","演技","えんぎ","acting, performance"],
+  ["歳","age, year","サイ, セイ","—","stop ＋ steps of years","Each step of the years finally come to a stop — age.","二十歳","はたち","twenty years old"],
+  ["争","contend","ソウ","あらそ(う)","two hands pulling","Two hands pulling the same thing apart — to contend.","戦争","せんそう","war"],
+  ["談","talk","ダン","—","words ＋ fire","Words shared warmly around the fire — a talk.","面談","めんだん","an interview, meeting"],
+  ["能","ability","ノウ","—","a figure of skill","A bear standing tall on its hind legs, skillfully — ability.","可能","かのう","possible"],
+  ["位","rank","イ","くらい","person ＋ standing","A person standing at their fixed place in line — rank.","位置","いち","position"],
+  ["置","place, put","チ","お(く)","net ＋ straight","A net set straight and left in place — to put.","置く","おく","to put"],
+  ["流","flow","リュウ, ル","なが(れる)","water ＋ banner","A banner streaming out like water in the wind — to flow.","流れる","ながれる","to flow"],
+  ["格","status, standard","カク, コウ","—","tree ＋ each","A tree grown true to its own standard — status, rank.","合格","ごうかく","passing (an exam)"],
+  ["疑","doubt","ギ","うたが(う)","a figure glancing back","A figure glancing back again and again, unsure — doubt.","疑問","ぎもん","a question, doubt"],
+  ["局","bureau","キョク","—","a corner office","A small office tucked into the corner of the building — a bureau.","郵便局","ゆうびんきょく","post office"],
+  ["放","release","ホウ","はな(す), はな(れる)","square ＋ strike","A strike that lets the square go free — to release.","放送","ほうそう","broadcast"],
+  ["常","usual","ジョウ","つね, とこ","a banner over the shrine","The everyday banner hung over the shrine, unchanged — usual.","日常","にちじょう","everyday life"],
+  ["状","state, form","ジョウ","—","dog ＋ plate shape","A shape sketched out on a plate — a state, a form.","状態","じょうたい","condition"],
+  ["球","ball","キュウ","たま","jewel ＋ seek","A jewel rounded perfectly, sought after by all — a ball, a sphere.","地球","ちきゅう","the Earth"],
+  ["職","occupation","ショク","—","ear ＋ sound ＋ flag","An ear tuned closely to the calls of one's post — occupation.","就職","しゅうしょく","getting a job"],
+  ["身","body","シン","み","a figure carrying itself","A figure standing full and whole, carrying itself — the body.","身分","みぶん","social status"],
+  ["説","theory","セツ, ゼイ","と(く)","words ＋ pleased","Words spoken until the listener is satisfied — a theory, an explanation.","説明","せつめい","explanation"],
+  ["乗","ride","ジョウ","の(る)","a figure climbing a tree","A figure climbing up onto a tree's high perch — to ride, to board.","乗る","のる","to ride"],
+  ["声","voice","セイ, ショウ","こえ","a note rising from the mouth","A musical note rising up out of the throat — the voice.","大声","おおごえ","loud voice"],
+  ["助","help","ジョ","たす(ける)","pile ＋ power","Extra strength piled onto a struggling load — to help.","助ける","たすける","to help"],
+  ["働","work","ドウ","はたら(く)","person in motion","A person moving, exerting themselves at labor — to work.","働く","はたらく","to work"],
+  ["形","shape","ケイ, ギョウ","かた, かたち","well ＋ brush strokes","Brush strokes tracing out a clear, well-defined shape — form.","人形","にんぎょう","doll"],
+  ["景","view, scenery","ケイ, ケ","—","sun ＋ capital","Sunlight falling over the whole capital city — a view, scenery.","景色","けしき","scenery"],
+  ["落","fall, drop","ラク","お(ちる), お(とす)","grass ＋ dripping water","Dew dripping down through the grass — to fall.","落ちる","おちる","to fall"],
+  ["好","fond of","コウ","この(む), す(き)","woman ＋ child","A mother and child, fond of one another — to like.","好き","すき","to like"],
+  ["退","retreat","タイ","しりぞ(く)","road ＋ walking backward","Footsteps backing away down the road — to retreat.","引退","いんたい","retirement"],
+  ["頭","head","トウ, ズ, ト","あたま, かしら","beans ＋ page","The round, bean-shaped top of the body — the head.","頭痛","ずつう","headache"],
+  ["負","lose, bear","フ","ま(ける), お(う)","shell ＋ bent figure","A person bent low, carrying the debt on their back — to lose, to bear.","負ける","まける","to lose"],
+  ["渡","cross over","ト","わた(る), わた(す)","water ＋ degree","Measuring out the water, step by step, to the far bank — to cross over.","渡る","わたる","to cross"],
+  ["差","difference","サ","さ(す)","sheep ＋ work","Sheep sorted out by the marks that tell them apart — a difference.","差別","さべつ","discrimination"],
+  ["末","end","マツ, バツ","すえ","a mark at the treetop","A mark carved at the very tip of the tree — the end.","週末","しゅうまつ","weekend"],
+  ["守","guard","シュ, ス","まも(る)","roof ＋ hand","A hand held ready beneath the roof — to guard.","守る","まもる","to protect"],
+  ["若","young","ジャク, ニャク","わか(い)","grass ＋ right hand","Fresh grass picked by a young hand — youth.","若い","わかい","young"],
+  ["種","kind, seed","シュ","たね","grain ＋ heavy","A grain heavy with the promise inside it — a seed, a kind.","各種","かくしゅ","various kinds"],
+  ["美","beauty","ビ","うつく(しい)","sheep ＋ big","A great, fine sheep, prized for its beauty — beautiful.","美しい","うつくしい","beautiful"],
+  ["命","life, fate","メイ, ミョウ","いのち","a command from the mouth","A mouth issuing the order that seals one's fate — life.","命","いのち","life"],
+  ["福","blessing","フク","—","altar ＋ full jar","A jar overflowing with offerings at the altar — good fortune.","幸福","こうふく","happiness"],
+  ["望","hope, wish","ボウ, モウ","のぞ(む)","moon ＋ field ＋ stand","Standing in a field, gazing at the moon and wishing — to hope.","希望","きぼう","hope"],
+  ["非","not, un-","ヒ","—","wings turned apart","Two wings pointing away from each other — negation, not.","非常","ひじょう","extraordinary, emergency"],
+  ["察","inspect","サツ","—","roof ＋ offering","An offering placed under the roof, examined with care — to inspect, guess.","観察","かんさつ","observation"],
+  ["段","steps, grade","ダン","—","a stepped cliffside","A cliff cut into a flight of stair-steps — a level, a grade.","階段","かいだん","stairs"],
+  ["横","horizontal, side","オウ","よこ","tree ＋ yellow","A plank of yellow wood laid flat on its side — sideways.","横","よこ","side, horizontal"],
+  ["深","deep","シン","ふか(い)","water ＋ fire deep below","Water sinking far down beneath the surface — deep.","深い","ふかい","deep"],
+  ["申","say, speak","シン","もう(す)","lightning through the sky","A bolt of lightning splitting straight through the sky — to state.","申す","もうす","to say (humble)"],
+  ["様","manner, Mr/Mrs","ヨウ","さま","tree ＋ sheep ＋ water","A carved tree-figure dressed just so — one's manner, a polite title.","お客様","おきゃくさま","honored customer"],
+  ["財","property","ザイ, サイ","—","shell money ＋ talent","Money multiplied by talent — wealth, property.","財布","さいふ","wallet"],
+  ["港","harbor","コウ","みなと","water ＋ lane","Boats lining a sheltered water-lane — a harbor.","空港","くうこう","airport"],
+  ["識","discern","シキ","—","words ＋ sound ＋ flag","Words sharp enough to mark out the truth — to discern, knowledge.","知識","ちしき","knowledge"],
+  ["呼","call","コ","よ(ぶ)","mouth ＋ exhale","A mouth letting a breath carry far — to call out.","呼ぶ","よぶ","to call"],
+  ["達","reach, arrive","タツ","—","road ＋ sheep","A sheep driven along the road until it finally arrives — to reach.","友達","ともだち","friend"],
+  ["良","good","リョウ","よ(い), い(い)","grain, refined","Grain sifted clean and fine — good, excellent.","良い","よい","good"],
+  ["阪","slope","ハン","さか","mound ＋ reverse","A mound rising up against the flatland — a slope.","大阪","おおさか","Osaka"],
+  ["候","condition","コウ","そうろう","person ＋ arrow, watching","A person keeping watch, arrow in hand, waiting for the moment — a sign.","天候","てんこう","weather"],
+  ["程","extent, degree","テイ","ほど","grain ＋ display","Grain measured out and displayed, degree by degree — extent.","程度","ていど","degree, extent"],
+  ["満","full","マン","み(ちる), み(たす)","water ＋ plate","A plate filled to overflowing with water — full, satisfied.","満員","まんいん","full (of people)"],
+  ["敗","defeat","ハイ","やぶ(れる)","shell money ＋ strike","Wealth struck down and lost — defeat.","敗北","はいぼく","a defeat"],
+  ["値","price, value","チ","ね, あたい","person ＋ straight","A person setting a straight, honest price — value.","値段","ねだん","price"],
+  ["突","thrust, sudden","トツ","つ(く)","hole ＋ dog bursting out","A dog bursting suddenly out of its den — a sudden thrust.","突然","とつぜん","suddenly"],
+  ["光","light","コウ","ひか(る), ひかり","fire held up by legs","A flame carried high on legs, lighting the way — light.","光る","ひかる","to shine"],
+  ["路","path, route","ロ","じ","foot ＋ each","Each footstep tracing out a path — a route.","道路","どうろ","road"],
+  ["科","department, course","カ","—","grain ＋ dipper","Grain sorted, dipper by dipper, into its own class — a department.","科目","かもく","a subject"],
+  ["積","pile up","セキ","つ(む), つ(もる)","grain ＋ duty","Grain owed and piled ever higher — to accumulate.","積む","つむ","to pile up"],
+  ["処","deal with","ショ","—","a seated figure","A figure sitting down to settle the matter — to deal with.","処理","しょり","processing"],
+  ["太","fat, thick","タイ, タ","ふと(い), ふと(る)","big, made even bigger","The character for big, given an extra stroke of weight — thick, fat.","太い","ふとい","thick, fat"],
+  ["客","customer, guest","キャク, カク","—","roof ＋ each guest","Each visitor welcomed one by one under the roof — a guest.","お客さん","おきゃくさん","customer"],
+  ["師","master, teacher","シ","—","a leading banner","A banner raised before a company of pupils — a master, a teacher.","医師","いし","doctor"],
+  ["登","ascend","トウ, ト","のぼ(る)","feet climbing a platform","Feet climbing step by step up a high platform — to ascend.","登る","のぼる","to climb"],
+  ["易","easy","エキ, イ","やさ(しい)","sun ＋ lizard","A lizard changing its color with ease — easy, simple.","簡易","かんい","simplicity"],
+  ["速","fast","ソク","はや(い)","road ＋ bundle carried quick","A bundle rushed swiftly down the road — fast.","速い","はやい","fast"],
+  ["存","exist","ソン, ゾン","—","child ＋ talent","A child's talent that endures over time — to exist, to survive.","存在","そんざい","existence"],
+  ["飛","fly","ヒ","と(ぶ), と(ばす)","wings spread wide","Wings thrown wide open in flight — to fly.","飛行機","ひこうき","airplane"],
+  ["殺","kill","サツ","ころ(す)","tree ＋ strike ＋ hand","A hand striking down hard — to kill.","殺す","ころす","to kill"],
+  ["単","simple","タン","ひとえ","a single stalk standing alone","One lone stalk standing simple and alone — simple, single.","簡単","かんたん","simple, easy"],
+  ["座","seat, sit","ザ","すわ(る)","building ＋ two people","Two figures settled on the ground beneath a roof — to sit.","座る","すわる","to sit"],
+  ["破","break","ハ","やぶ(る), やぶ(れる)","stone ＋ skin","A stone smashing clean through the skin of something — to break.","破る","やぶる","to tear, break"],
+  ["除","exclude","ジョ, ジ","のぞ(く)","mound ＋ slow removal","Something slowly cleared away off the mound — to remove.","掃除","そうじ","cleaning"],
+  ["完","complete","カン","—","roof ＋ origin","A house finished right down to its very foundation — complete.","完成","かんせい","completion"],
+  ["降","descend","コウ, ゴ","ふ(る), お(りる)","mound ＋ two feet coming down","Feet stepping down off the high mound — to descend, to fall.","降りる","おりる","to get off, descend"],
+  ["責","blame, liability","セキ","せ(める)","shell money ＋ master","A debt a master insists must be repaid — responsibility, blame.","責任","せきにん","responsibility"],
+  ["捕","catch","ホ","と(る), つか(まえる)","hand ＋ bushy prey","A hand closing around prey hiding in the brush — to capture.","捕まえる","つかまえる","to catch"],
+  ["危","dangerous","キ","あぶ(ない), あや(うい)","a figure on a cliff","A person leaning right at the cliff's edge — danger.","危ない","あぶない","dangerous"],
+  ["給","supply, wage","キュウ","—","thread ＋ together","Thread doled out to everyone together — to supply, a wage.","給料","きゅうりょう","salary"],
+  ["苦","suffering","ク","にが(い), くる(しい)","grass ＋ old bitterness","A bitter old herb, hard to swallow — suffering, bitter.","苦しい","くるしい","painful, hard"],
+  ["迎","welcome","ゲイ","むか(える)","road ＋ facing forward","Stepping onto the road to face the arriving guest — to welcome.","迎える","むかえる","to welcome, greet"],
+  ["園","garden, park","エン","その","enclosure ＋ robe of plants","A plot of plants fenced in and carefully tended — a garden.","公園","こうえん","park"],
+  ["具","tool, ingredient","グ","—","shellfish, two hands","Two hands presenting the treasure they've gathered — a tool.","道具","どうぐ","a tool"],
+  ["辞","resign","ジ","や(める)","words ＋ plow","Words laid down and the plough turned aside — to resign.","辞書","じしょ","dictionary"],
+  ["因","cause","イン","よ(る)","a person enclosed","A person resting on the mat that supports them — the cause.","要因","よういん","a factor"],
+  ["馬","horse","バ","うま","four legs, a flowing mane","Four legs and a mane streaming in the wind — a horse.","馬","うま","horse"],
+  ["富","wealth","フ, フウ","と(む), とみ","roof ＋ wine jar","A wine jar brimming full beneath the roof — wealth.","豊富","ほうふ","abundance"],
+  ["彼","he, that","ヒ","かれ, かの","walk ＋ skin","A figure walking off, just out of reach — that one over there, he.","彼女","かのじょ","girlfriend, she"],
+  ["未","not yet","ミ, ビ","いま(だ)","a tree with a young shoot","A tree not yet fully grown — not yet.","未来","みらい","the future"],
+  ["舞","dance","ブ","ま(う), まい","feet in patterned steps","Feet tracing patterned steps across the floor — to dance.","舞台","ぶたい","a stage"],
+  ["亡","deceased","ボウ, モウ","な(くなる)","a figure hidden from sight","A figure vanished behind the wall — gone, deceased.","死亡","しぼう","death"],
+  ["冷","cold","レイ","つめ(たい), ひ(える)","ice ＋ order","Ice commanding everything to stay still and cold — cold.","冷たい","つめたい","cold (to the touch)"],
+  ["適","suitable","テキ","—","road ＋ mark","The road that fits the traveler exactly — suitable.","適当","てきとう","suitable, apt"],
+  ["婦","woman, wife","フ","—","woman ＋ broom","A woman with the household broom in hand — a married woman.","夫婦","ふうふ","married couple"],
+  ["寄","approach, donate","キ","よ(る), よ(せる)","roof ＋ odd offering","An odd gift carried up to the door — to approach, to donate.","寄る","よる","to approach, drop by"],
+  ["込","crowded, into","—","こ(む), こ(める)","road ＋ enter","People pouring onto the road until it's packed — crowded, into.","申し込む","もうしこむ","to apply"],
+  ["顔","face","ガン","かお","head ＋ page","The front page of the head — the face.","顔","かお","face"],
+  ["類","kind, type","ルイ","たぐ(い)","rice ＋ dog ＋ page","Creatures sorted onto the same page of the record — a kind.","種類","しゅるい","type, kind"],
+  ["余","surplus","ヨ","あま(る), あま(り)","a house with plenty left over","Grain stored with plenty left over after the feast — surplus.","余裕","よゆう","margin, leeway"],
+  ["王","king","オウ","—","three realms joined by one","Heaven, earth, and man, joined by a single ruler — a king.","王様","おうさま","king"],
+  ["返","return","ヘン","かえ(る), かえ(す)","road ＋ turn back","Footsteps doubling back down the road — to return.","返事","へんじ","a reply"],
+  ["妻","wife","サイ","つま","hand ＋ pinned hair","A woman's hair carefully pinned by a steady hand — a wife.","妻","つま","wife"],
+  ["背","back, height","ハイ","せ, せい","north ＋ flesh","The northern, unseen side of the body — the back.","背が高い","せがたかい","tall (in height)"],
+  ["熱","heat","ネツ","あつ(い)","earth ＋ heart ＋ fire","Fire burning beneath the earth and rising to the heart — heat.","熱い","あつい","hot"],
+  ["宿","inn, lodging","シュク","やど","roof ＋ hundred","A hundred travelers resting beneath a single roof — an inn.","宿題","しゅくだい","homework"],
+  ["険","steep","ケン","けわ(しい)","mound ＋ all covered over","A mound so steep it swallows the whole path — perilous.","危険","きけん","danger"],
+  ["頼","rely, request","ライ","たの(む), たよ(る)","bundle ＋ shell ＋ head","Leaning one's whole weight on someone's support — to rely on.","頼む","たのむ","to ask, request"],
+  ["船","ship","セン","ふね, ふな","a hollow vessel","A hollow vessel hollowed out to cross the water — a boat.","船","ふね","ship"],
+  ["途","route, way","ト","—","road ＋ earth","A road marked out across the earth — a route.","途中","とちゅう","on the way"],
+  ["許","permit","キョ","ゆる(す)","words ＋ noon","Words spoken at the fair hour of noon, granting leave — to permit.","許す","ゆるす","to forgive, permit"],
+  ["抜","pull out","バツ","ぬ(く), ぬ(ける)","hand ＋ dog","A hand yanking something free like pulling a dog from a hole — to pull out.","抜く","ぬく","to pull out"],
+  ["便","convenient","ベン, ビン","たよ(り)","person ＋ change","A person adapting things to make life easier — convenient.","便利","べんり","convenient"],
+  ["留","detain, stop","リュウ, ル","と(める), と(まる)","field ＋ stop","Something fixed still in the field — to detain, to stay.","留守","るす","absence from home"],
+  ["罪","guilt, crime","ザイ","つみ","net ＋ wrong","Wrongdoing finally caught in a net — a crime.","犯罪","はんざい","crime"],
+  ["努","endeavor","ド","つと(める)","slave ＋ strength","Strength poured into hard, unending labor — to strive.","努力","どりょく","effort"],
+  ["精","refined spirit","セイ, ショウ","—","rice ＋ blue-green","Rice polished down to its purest, blue-white grain — refined, spirit.","精神","せいしん","spirit, mind"],
+  ["散","scatter","サン","ち(る), ち(らす)","meat ＋ branches ＋ strike","Petals struck loose from the branch and scattered wide — to scatter.","散歩","さんぽ","a walk"],
+  ["静","quiet","セイ, ジョウ","しず(か)","blue-green ＋ contend","A struggle finally settling into stillness — quiet, calm.","静か","しずか","quiet"],
+  ["喜","rejoice","キ","よろこ(ぶ)","drum ＋ mouth","A mouth cheering to the beat of a drum — to rejoice.","喜ぶ","よろこぶ","to be glad"],
+  ["浮","float","フ","う(く), う(かぶ)","water ＋ claw ＋ child","A child held up safely above the water — to float.","浮かぶ","うかぶ","to float, come to mind"],
+  ["絶","cut off, extinct","ゼツ","た(つ), た(える)","thread ＋ blade","A thread severed clean through — to cut off, extinct.","絶対","ぜったい","absolutely"],
+  ["幸","happiness","コウ","しあわ(せ), さいわ(い)","an unlucky path reversed","An unlucky path turned around and made lucky — happiness.","幸せ","しあわせ","happiness"],
+  ["押","push","オウ","お(す)","hand ＋ first","A hand pressing to be first through the door — to push.","押す","おす","to push"],
+  ["等","equality, etc.","トウ","ひと(しい), など","bamboo ＋ temple","Bamboo strips of law, measured out equally at the temple — equal, etc.","平等","びょうどう","equality"],
+  ["曲","bend, tune","キョク","ま(げる), ま(がる)","a bent container","A container bent into its curved shape — to bend, a tune.","曲がる","まがる","to bend, turn"],
+  ["払","pay, clear away","フツ","はら(う)","hand ＋ not","A hand sweeping debt away until there's nothing left — to pay.","払う","はらう","to pay"],
+  ["庭","garden, yard","テイ","にわ","building ＋ court","A court laid open beneath the eaves — a garden, a yard.","庭","にわ","garden"],
+  ["徒","on foot, follower","ト","—","step ＋ earth","Footsteps walking plain earth, no cart needed — on foot, a follower.","生徒","せいと","a student"],
+  ["勤","work, serve","キン, ゴン","つと(める)","hard work ＋ power","Power applied diligently, day after day — to work, to serve.","勤める","つとめる","to work for, serve"],
+  ["遅","slow, late","チ","おそ(い), おく(れる)","road ＋ pig","A heavy pig plodding slowly down the road — slow, late.","遅れる","おくれる","to be late"],
+  ["居","reside","キョ","い(る)","body ＋ old","A body settled in one old, familiar spot — to reside.","居る","いる","to be, exist"],
+  ["招","invite","ショウ","まね(く)","hand ＋ beckoning","A hand beckoning someone to come closer — to invite.","招待","しょうたい","invitation"],
+  ["困","troubled","コン","こま(る)","a tree boxed inside walls","A tree hemmed in on every side, unable to grow — to be troubled.","困る","こまる","to be in trouble"],
+  ["更","renew, furthermore","コウ","さら(に), ふ(ける)","old exchanged for new","The old hour exchanged for a fresh one — to renew, furthermore.","更に","さらに","furthermore"],
+  ["刻","engrave, moment","コク","きざ(む)","knife ＋ mark","A knife cutting marks that stay fixed in time — to engrave, a moment.","時刻","じこく","the time"],
+  ["賛","approve, praise","サン","—","twin gifts ＋ shell","Gifts offered twice over in approval — to praise, to agree.","賛成","さんせい","approval, agreement"],
+  ["抱","embrace","ホウ","だ(く), かか(える)","hand ＋ wrap around","Arms wrapping fully around what's held close — to embrace.","抱く","だく","to embrace, hold"],
+  ["犯","crime","ハン","おか(す)","dog ＋ kneeling figure","A figure caught crouching where they shouldn't be — a crime.","犯人","はんにん","a criminal"],
+  ["恐","fear","キョウ","おそ(ろしい), おそ(れる)","work ＋ heart","The heart trembling at unfinished work left undone — fear, dread.","恐い","こわい","scary"],
+  ["息","breath","ソク","いき","self ＋ heart","The heart's own rhythm, felt in every breath — breath.","息","いき","breath"],
+  ["遠","distant","エン, オン","とお(い)","road ＋ garment stretched far","A garment's hem stretching far into the distance down the road — far.","遠い","とおい","far"],
+  ["戻","return","レイ","もど(る), もど(す)","door ＋ dog","A dog slipping back through the door it came from — to return.","戻る","もどる","to go back"],
+  ["願","wish","ガン","ねが(う)","original ＋ head bowed","A head bowed low, hoping for what one truly wants — to wish.","お願い","おねがい","a request, please"],
+  ["絵","picture","カイ, エ","え, えが(く)","thread ＋ meeting of colors","Threads of color meeting together on the canvas — a picture.","絵","え","picture"],
+  ["越","surpass","エツ","こ(す), こ(える)","walk ＋ axe","A traveler cutting straight over the mountain pass — to surpass.","引っ越し","ひっこし","moving house"],
+  ["笑","laugh","ショウ","わら(う), え(む)","bamboo ＋ bent figure","Bamboo leaves bending like a body doubled up laughing — to laugh.","笑う","わらう","to laugh"],
+  ["束","bundle","ソク","たば","tree wrapped tight","A tree's branches gathered together and tied tight — a bundle.","約束","やくそく","a promise"],
+  ["似","resemble","ジ","に(る)","person ＋ with","A person standing side by side with their double — to resemble.","似る","にる","to resemble"],
+  ["列","row, line","レツ","—","bones ＋ knife","Bones laid out in a straight line, ready for cutting — a row.","列","れつ","a line, row"],
+  ["探","search","タン","さぐ(る), さが(す)","hand ＋ deep cave","A hand reaching deep into a cave, feeling for something — to search.","探す","さがす","to search for"],
+  ["逃","escape","トウ","に(げる), のが(す)","road ＋ leap","A leap taken down the open road to get away — to flee.","逃げる","にげる","to run away"],
+  ["遊","play","ユウ, ユ","あそ(ぶ)","road ＋ waving banner","A banner waved freely as children run the road — to play.","遊ぶ","あそぶ","to play"],
+  ["迷","perplexed, lost","メイ","まよ(う)","road ＋ scattered rice","Rice scattered every which way on the road, no path clear — to be lost.","迷う","まよう","to be lost, hesitate"],
+  ["夢","dream","ム","ゆめ","night ＋ half-closed eyes","Eyes half closed beneath the evening grass — a dream.","夢","ゆめ","dream"],
+  ["閉","closed","ヘイ","し(める), と(じる)","gate ＋ wooden bar","A wooden bar dropped across the gate — closed.","閉める","しめる","to close"],
+  ["緒","cord, beginning","ショ, チョ","お","thread ＋ wagon shaft","A thread tied first to the wagon's shaft — the starting cord.","一緒に","いっしょに","together"],
+  ["折","fold, break","セツ, シャク","お(る), お(れる)","hand ＋ axe on wood","An axe bending a branch until it finally snaps — to fold, break.","折る","おる","to fold, break"],
+  ["草","grass","ソウ","くさ","young plants sprouting","Young plants sprouting early from the soil — grass.","草","くさ","grass"],
+  ["酒","sake, alcohol","シュ","さけ, さか","water ＋ wine jar","Water fermented inside the wine jar — sake, alcohol.","酒","さけ","sake, alcohol"],
+  ["悲","sad","ヒ","かな(しい)","not ＋ heart","A heart that is simply not right — sorrow.","悲しい","かなしい","sad"],
+  ["晴","clear weather","セイ","は(れる)","sun ＋ blue-green sky","The sun breaking through to a clear blue sky — fine weather.","晴れる","はれる","to clear up"],
+  ["掛","hang","ケイ","か(ける), か(かる)","hand ＋ plow-mound","A hand hanging the plow up on its hook — to hang.","掛ける","かける","to hang, to sit"],
+  ["到","arrive","トウ","いた(る)","reach ＋ blade","An arrow reaching all the way to its mark — to arrive.","到着","とうちゃく","arrival"],
+  ["暗","dark","アン","くら(い)","sun ＋ sound","The sun gone quiet, leaving only darkness behind — dark.","暗い","くらい","dark"],
+  ["盗","steal","トウ","ぬす(む)","next ＋ coveted plate","Eyes fixed on a plate of food that isn't theirs — to steal.","盗む","ぬすむ","to steal"],
+  ["吸","suck, inhale","キュウ","す(う)","mouth ＋ reaching in","A mouth drawing breath deep inside — to inhale.","呼吸","こきゅう","breathing"],
+  ["陽","sunshine","ヨウ","ひ","mound ＋ rising sun","The sun climbing over the mound at dawn — sunshine.","太陽","たいよう","the sun"],
+  ["御","honorable","ギョ, ゴ","お, おん","road ＋ person of rank","A person of rank proceeding down the road, honored by all — honorable.","御飯","ごはん","cooked rice, a meal"],
+  ["歯","tooth","シ","は","mouth ＋ stop marks","Teeth marked in a neat row inside the mouth — a tooth.","歯","は","tooth"],
+  ["忘","forget","ボウ","わす(れる)","die ＋ heart","A memory that has died out of the heart — to forget.","忘れる","わすれる","to forget"],
+  ["雪","snow","セツ","ゆき","rain ＋ broom","Rain swept clean into flakes of drifting white — snow.","雪","ゆき","snow"],
+  ["吹","blow","スイ","ふ(く)","mouth ＋ missing breath","A mouth pushing out a sudden gust of air — to blow.","吹く","ふく","to blow"],
+  ["娘","daughter","ジョウ","むすめ","woman ＋ good","A woman still young and good, a family's daughter.","娘","むすめ","daughter"],
+  ["洗","wash","セン","あら(う)","water ＋ first","Water rinsing everything back to its first, clean state — to wash.","洗う","あらう","to wash"],
+  ["慣","accustomed","カン","な(れる), な(らす)","heart ＋ pierce through habit","The heart worn into a groove of habit — to get used to.","習慣","しゅうかん","habit, custom"],
+  ["礼","etiquette","レイ, ライ","—","altar ＋ bowing figure","A figure bowing low before the altar — courtesy, etiquette.","お礼","おれい","thanks, gratitude"],
+  ["窓","window","ソウ","まど","hole ＋ heart open to the sky","A hole in the roof letting light reach the room's heart — a window.","窓","まど","window"],
+  ["貧","poverty","ヒン, ビン","まず(しい)","divide ＋ shell money","Money divided so many times there's nothing left — poverty.","貧しい","まずしい","poor"],
+  ["怒","anger","ド","おこ(る), いか(る)","slave ＋ heart","A heart straining under an unfair burden — anger.","怒る","おこる","to get angry"],
+  ["泳","swim","エイ","およ(ぐ)","water ＋ eternal","Endless water, and a body moving steadily through it — to swim.","泳ぐ","およぐ","to swim"],
+  ["祖","ancestor","ソ","—","altar ＋ piled offerings","Offerings piled up in honor of those who came before — an ancestor.","祖母","そぼ","grandmother"],
+  ["杯","cup","ハイ","さかずき","wood ＋ not full","A small wooden cup, never quite full for long — a cup.","一杯","いっぱい","a cupful, full"],
+  ["疲","tired","ヒ","つか(れる)","sickness ＋ worn skin","The body's skin worn thin from long strain — fatigue.","疲れる","つかれる","to get tired"],
+  ["皆","all, everyone","カイ","みな, みんな","compare ＋ white","Every single one lined up and compared, all alike — everyone.","皆さん","みなさん","everyone"],
+  ["鳴","chirp, cry","メイ","な(る), な(く)","mouth ＋ bird","A bird's mouth calling out into the air — to chirp, cry.","鳴る","なる","to ring, sound"],
+  ["腹","belly","フク","はら","body ＋ repeat","The folded flesh at the body's center — the belly.","お腹","おなか","stomach"],
+  ["煙","smoke","エン","けむ(る), けむり","fire ＋ dry riverbed","Fire's breath drifting like mist over a dry riverbed — smoke.","煙","けむり","smoke"],
+  ["眠","sleep","ミン","ねむ(る), ねむ(い)","eye ＋ at rest","An eye finally closing after a long day — sleep.","眠る","ねむる","to sleep"],
+  ["怖","scary","フ","こわ(い)","heart ＋ cloth-covered fear","The heart flinching, wrapped in dread — scary.","怖い","こわい","scary"],
+  ["耳","ear","ジ","みみ","the shape of an ear","The simple, curved shape of the ear itself — ear.","耳","みみ","ear"],
+  ["頂","summit, receive","チョウ","いただ(く)","ladle ＋ head","The very peak, the head of the mountain — the summit, to receive humbly.","頂上","ちょうじょう","the summit"],
+  ["箱","box","—","はこ","bamboo ＋ interior","Bamboo strips woven into an inner container — a box.","箱","はこ","box"],
+  ["寒","cold","カン","さむ(い)","roof ＋ shivering ice and grass","A house so cold that even the straw beneath the roof shivers — cold.","寒い","さむい","cold (weather)"],
+  ["髪","hair","ハツ","かみ","head ＋ long strands","Long strands crowning the top of the head — hair.","髪","かみ","hair"],
+  ["忙","busy","ボウ, モウ","いそが(しい)","heart ＋ lost","The heart racing so fast it loses itself — busy.","忙しい","いそがしい","busy"],
+  ["才","talent","サイ","—","one sprout breaking through","One sprout breaking free before all the rest — talent.","天才","てんさい","genius"],
+  ["靴","shoes","カ","くつ","leather ＋ change","Leather shaped to change bare feet into shod ones — shoes.","靴","くつ","shoes"],
+  ["恥","shame","チ","は(じる), はじ","ear ＋ heart","The heart's blush rising all the way to the ears — shame.","恥ずかしい","はずかしい","embarrassing"],
+  ["偶","by chance","グウ","—","person ＋ pair","A person standing paired up by pure chance — by chance, even number.","偶然","ぐうぜん","coincidence"],
+  ["偉","great, admirable","イ","えら(い)","person ＋ bound achievement","A person whose deeds are bound and remembered — great, admirable.","偉い","えらい","admirable, great"],
+  ["猫","cat","ビョウ","ねこ","animal ＋ soft paws","A soft-pawed creature curling up among the seedlings — a cat.","猫","ねこ","cat"],
+  ["幾","how many","キ","いく(つ)","thread ＋ halberd, counted","Threads counted one by one, however many there are — how many.","幾つ","いくつ","how many"],
+  ["誰","who","スイ","だれ","words ＋ bird's call","Words tossed into the air like a bird's call, asking — who?","誰","だれ","who"]
+].map(mk("N3"));
+
+const ALL = [...N5, ...N4, ...N3];
+const BYK = {}; ALL.forEach(e => BYK[e.k] = e);
+
+/* ============================================================
+   STATE + HELPERS
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const state = {
+  phase:'setup', src:'daily', mode:'flash', order:'seq',
+  deck:[], results:[], i:0, practice:false,
+  q:null, answered:false,
+  tally:{c:0, w:0, misses:[]}
+};
+const SRC_LABEL = {daily:'Daily kanji', n5:'JLPT N5', n4:'JLPT N4', n3:'JLPT N3', custom:'My own set'};
+const MODE_DESC = {
+  flash:['Flashcard','meaning + reading + one example word'],
+  quiz:['Quiz','I give you kanji; you quiz me one by one'],
+  writing:['Writing','stroke order principles + component breakdown']
+};
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const prim = s => s.split(',')[0].trim();
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function mulberry32(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+let toastTimer;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3400)}
+
+/* ============================================================
+   SETUP VIEW
+   ============================================================ */
+function renderSetup(){
+  state.phase='setup';
+  show('#vSetup'); hide('#vStudy'); hide('#vEnd');
+  const counts = {daily:ALL.length, n5:N5.length, n4:N4.length, n3:N3.length};
+  const chip = (id,label,sub)=>`<button class="chip srcchip ${state.src===id?'on':''}" data-src="${id}">${label}<small>${sub}</small></button>`;
+  const today = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  $('#vSetup').innerHTML = `
+  <div class="setup">
+    <div class="overline">墨 Sumi · first message of the session</div>
+    <h1>Two quick questions,<br>then we begin.</h1>
+    <p class="lede">Every kanji in this room carries a hand-checked reading, a radical note, a mnemonic and one real example word.</p>
+
+    <div class="qlabel"><b>01</b>What are we studying today?</div>
+    <div class="chips">
+      ${chip('daily','Daily kanji','today\u2019s five · '+today.split(',')[0])}
+      ${chip('n5','JLPT N5',counts.n5)}
+      ${chip('n4','JLPT N4',counts.n4)}
+      ${chip('n3','JLPT N3',counts.n3)}
+      ${chip('custom','My own set','type kanji')}
+    </div>
+    ${state.src==='custom' ? `
+    <div class="customrow">
+      <input id="customIn" class="tinput" placeholder="例：休 食 語　or　勉強図書" autocomplete="off">
+    </div>
+    <div class="ihint">Type or paste kanji — separated or as words. I\u2019ll pull the ones from my verified set and tell you honestly about any I don\u2019t have.</div>` : ''}
+
+    <div class="qlabel"><b>02</b>And how do you like to work?</div>
+    <div class="modeopts">
+      ${Object.entries(MODE_DESC).map(([id,[n,d]])=>`
+      <button class="modeopt ${state.mode===id?'on':''}" data-mode="${id}">
+        <span class="dot"></span><span class="mname">${n}</span><span class="mdesc">${d}</span>
+      </button>`).join('')}
+    </div>
+
+    <div class="setupfoot">
+      <button class="btn primary" id="beginBtn">Begin the session →</button>
+      <div class="ordwrap">
+        <span class="ordlab">Order</span>
+        <button class="chip mini ordchip ${state.order==='seq'?'on':''}" data-order="seq">Sequential</button>
+        <button class="chip mini ordchip ${state.order==='rnd'?'on':''}" data-order="rnd">Shuffled</button>
+      </div>
+    </div>
+  </div>`;
+  updateRail();
+}
+
+/* ============================================================
+   DECK BUILDING
+   ============================================================ */
+function buildDeck(){
+  let deck;
+  if(state.src==='n5') deck=[...N5];
+  else if(state.src==='n4') deck=[...N4];
+  else if(state.src==='n3') deck=[...N3];
+  else if(state.src==='custom'){
+    const raw=$('#customIn') ? $('#customIn').value : '';
+    const chars=[...new Set(Array.from(raw).filter(c=>c.trim()&&!/[a-zA-Z0-9\s、。・]/.test(c)))];
+    const found=[],missing=[];
+    chars.forEach(c=>(BYK[c]?found:missing).push(c));
+    if(!found.length){toast('None of those are in my verified N5–N3 set yet — try kanji like 休, 食, 語.');return false}
+    if(missing.length) toast('Not in my verified set (skipped): '+missing.slice(0,12).join('・')+(missing.length>12?'…':''));
+    deck=found.map(c=>BYK[c]);
+  } else { // daily — five seeded by the date, so it's the same sheet all day
+    const d=new Date();
+    const seed=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
+    const rnd=mulberry32(seed);
+    const idx=ALL.map((_,i)=>i);
+    for(let i=idx.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]]}
+    deck=idx.slice(0,5).map(i=>ALL[i]);
+  }
+  if(state.order==='rnd') shuffle(deck);
+  state.deck=deck; state.results=deck.map(()=>null);
+  state.i=0; state.practice=false; state.answered=false; state.q=null;
+  state.tally={c:0,w:0,misses:[]};
+  return true;
+}
+
+function startSession(){
+  if(!buildDeck()) return;
+  state.phase='study';
+  show('#vStudy'); hide('#vSetup'); hide('#vEnd');
+  renderStudy(); updateRail();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ============================================================
+   SHARED CARD PIECES
+   ============================================================ */
+function fieldsHTML(e, veil, compact){
+  const cov = veil ? '<button class="cover" data-act="peek">tap to check</button>' : '';
+  const fv = inner => veil ? `<span class="fv">${inner}${cov}</span>` : inner;
+  const onVal = e.on==='—' ? '<span class="none">none common</span>' : `<span class="rval">${e.on}</span>`;
+  const kunVal = e.kun==='—' ? '<span class="none">none common</span>' : `<span class="rval">${e.kun}</span>`;
+  return `
+  <div class="f" style="--d:.06s"><div class="flab">Meaning</div>
+    <div class="fval">${fv(esc(e.m))}</div></div>
+  <div class="f" style="--d:.12s"><div class="flab">On\u2019yomi</div>
+    <div class="fval">${fv(`<span class="readings"><span><span class="rlab">On (katakana)</span>${onVal}</span><span class="rsep"></span><span><span class="rlab">Kun (hiragana)</span>${kunVal}</span></span>`)}</div></div>
+  <div class="f" style="--d:.18s"><div class="flab">Radicals</div>
+    <div class="fval">${e.rad}</div></div>
+  <div class="f" style="--d:.24s"><div class="flab">Mnemonic</div>
+    <div class="fval mnem">${e.mn}</div></div>
+  <div class="f" style="--d:.3s"><div class="flab">Example</div>
+    <div class="fval">${fv(`<span class="example"><ruby>${e.ex}<rt>${e.exF}</rt></ruby></span><span class="exmean">— ${esc(e.exM)}</span>`)}</div></div>`;
+}
+
+function glyphHTML(e, pos, len){
+  return `
+  <div class="glyphwrap">
+    <div class="guides"></div>
+    <div class="glyphtag">漢字 · <b>${e.lv}</b> · no. ${pos} of ${len}</div>
+    <div class="glyph">${e.k}</div>
+    <div id="stampSlot"></div>
+  </div>`;
+}
+
+function stampHTML(ok){
+  const circle = `<svg viewBox="0 0 100 100"><circle class="st" cx="50" cy="50" r="40" pathLength="100"/></svg>`;
+  const cross  = `<svg viewBox="0 0 100 100"><line class="st" x1="20" y1="20" x2="80" y2="80" pathLength="100"/><line class="st d2" x1="80" y1="20" x2="20" y2="80" pathLength="100"/></svg>`;
+  return `<div class="stamp">${ok?circle:cross}</div>`;
+}
+
+/* ============================================================
+   STUDY VIEWS
+   ============================================================ */
+function renderStudy(){
+  const e = state.deck[state.i];
+  if(!e){ renderEnd(); return }
+  const pos = state.i+1, len = state.deck.length;
+  const modeLine = `${MODE_DESC[state.mode][0].toUpperCase()} — ${SRC_LABEL[state.src]} · ${state.order==='seq'?'sequential':'shuffled'}`;
+
+  if(state.mode==='flash'){
+    const tutor = state.practice
+      ? 'Say the meaning and both readings out loud, then tap each veil to check yourself.'
+      : 'Ready for the next one, or want to practice this one?';
+    $('#vStudy').innerHTML = `
+    <div class="study">
+      ${glyphHTML(e,pos,len)}
+      <div>
+        <div class="cardhead">${modeLine}</div>
+        ${fieldsHTML(e, state.practice)}
+        <div class="tutor">${tutor}</div>
+        <div class="actions">
+          ${state.practice
+            ? '<button class="btn ghost" data-act="reveal">Reveal all</button>'
+            : '<button class="btn ghost" data-act="practice">Practice this one</button>'}
+          <button class="btn primary" data-act="next">${pos<len?'Next kanji →':'Finish the sheet →'}</button>
+        </div>
+        <div class="keyshint">space — next</div>
+      </div>
+    </div>`;
+  }
+
+  else if(state.mode==='quiz'){
+    if(!state.answered) state.q = makeQ(e);
+    const q = state.q;
+    const qText = q.t==='m' ? `What does <span class="jp">${e.k}</span> mean?`
+                : q.t==='on'? `Choose the on\u2019yomi of <span class="jp">${e.k}</span>.`
+                : `Choose the kun\u2019yomi of <span class="jp">${e.k}</span>.`;
+    $('#vStudy').innerHTML = `
+    <div class="study">
+      ${glyphHTML(e,pos,len)}
+      <div>
+        <div class="cardhead">${modeLine} · question ${pos}</div>
+        <div class="qq">${qText}</div>
+        <div class="opts ${state.answered?'lock':''}">
+          ${q.opts.map((o,i)=>{
+            let cls='opt', mark='';
+            if(state.answered){
+              if(o===q.ans){cls+=' good';mark='<span class="mark">〇</span>'}
+              else if(i===state.picked){cls+=' bad';mark='<span class="mark">✕</span>'}
+              else cls+=' dim';
+            }
+            const txt = q.t==='m' ? esc(o) : `<span class="jp">${o}</span>`;
+            return `<button class="${cls}" data-opt="${i}"><span class="num">${i+1}</span>${txt}${mark}</button>`;
+          }).join('')}
+        </div>
+        ${state.answered ? `
+        <div class="reveal">
+          <div class="tutor">${state.lastOk ? '正解 — that\u2019s the one.' : 'Not quite — the full card is here. Next question?'}</div>
+          ${fieldsHTML(e,false)}
+        </div>` : ''}
+        <div class="tutor">${state.answered?'':'Take your time — choose your answer.'}</div>
+        <div class="actions">
+          ${state.answered?`<button class="btn primary" data-act="next">${pos<len?'Next question →':'See the report →'}</button>`:''}
+        </div>
+        <div class="keyshint">keys 1–4 — answer · space — continue</div>
+      </div>
+    </div>`;
+  }
+
+  else { // writing
+    const chips = e.rad.split('＋').map(s=>`<span class="wchip">${s.trim()}</span>`).join('');
+    $('#vStudy').innerHTML = `
+    <div class="study">
+      ${glyphHTML(e,pos,len)}
+      <div>
+        <div class="cardhead">${modeLine}</div>
+        <div class="f" style="--d:.05s"><div class="flab">Components</div>
+          <div class="fval"><div class="wchips">${chips}</div></div></div>
+        <div class="f" style="--d:.12s"><div class="flab">Meaning</div>
+          <div class="fval">${esc(e.m)} <span class="none">· ${e.on} / ${e.kun}</span></div></div>
+        <div class="f" style="--d:.18s"><div class="flab">Mnemonic</div>
+          <div class="fval mnem">${e.mn}</div></div>
+        <div class="f" style="--d:.24s"><div class="flab">Assemble it</div>
+          <div class="fval">
+            <ul class="principles">
+              <li>Build big strokes top → bottom, left → right.</li>
+              <li>Horizontal strokes come before the verticals that cross them.</li>
+              <li>Framing boxes: left side, top, then inside, then close the bottom.</li>
+              <li>Center strokes first, then the symmetrical wings.</li>
+            </ul>
+            <div class="snote">Honest note: I don\u2019t animate exact stroke sequences here — trace the ghost below and confirm fine order with a stroke-order chart.</div>
+          </div></div>
+        <div class="f" style="--d:.3s"><div class="flab">Trace</div>
+          <div class="fval">
+            <div class="tracewrap">
+              <div class="ghost" style="font-size:230px">${e.k}</div>
+              <canvas id="trace"></canvas>
+            </div>
+            <div class="tracebar">
+              <button class="btn ghost" data-act="clear">Clear the ink</button>
+            </div>
+          </div></div>
+        <div class="tutor">Break it into parts, trace it a few times on the grid — then:</div>
+        <div class="actions">
+          <button class="btn primary" data-act="next">${pos<len?'Next kanji →':'Finish the sheet →'}</button>
+        </div>
+        <div class="keyshint">space — next</div>
+      </div>
+    </div>`;
+    requestAnimationFrame(initCanvas);
+  }
+  updateRail();
+}
+
+function initCanvas(){
+  const c=$('#trace'); if(!c) return;
+  const wrap=c.parentElement, r=wrap.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  c.width=r.width*dpr; c.height=r.height*dpr;
+  const g=c.getContext('2d'); g.scale(dpr,dpr);
+  c.dataset.w=r.width; c.dataset.h=r.height;
+  let drawing=false, last=null;
+  const pos=e=>{const b=c.getBoundingClientRect();return{x:e.clientX-b.left,y:e.clientY-b.top}};
+  c.onpointerdown=e=>{drawing=true;last=pos(e);c.setPointerCapture(e.pointerId)};
+  c.onpointermove=e=>{
+    if(!drawing) return;
+    const p=pos(e);
+    g.strokeStyle='#211D15';
+    g.lineWidth=Math.max(5, r.width/30);
+    g.lineCap='round'; g.lineJoin='round';
+    g.beginPath(); g.moveTo(last.x,last.y); g.lineTo(p.x,p.y); g.stroke();
+    last=p;
+  };
+  c.onpointerup=c.onpointercancel=()=>{drawing=false};
+  c.clear=()=>g.clearRect(0,0,r.width,r.height);
+}
+
+/* ============================================================
+   QUIZ LOGIC
+   ============================================================ */
+function makeQ(e){
+  const types=['m'];
+  if(e.on!=='—') types.push('on');
+  if(e.kun!=='—') types.push('kun');
+  const t=types[Math.floor(Math.random()*types.length)];
+  let pool=state.deck.filter(x=>x!==e);
+  if(pool.length<3) pool=ALL.filter(x=>x!==e);
+  const val=x=> t==='m'?x.m : t==='on'?prim(x.on) : prim(x.kun);
+  const ans=val(e);
+  const excl = t==='m' ? [] :
+    (e.on==='—'?[]:e.on.split(',')).concat(e.kun==='—'?[]:e.kun.split(',')).map(s=>s.trim().split('(')[0].trim());
+  const seen=new Set([ans,...excl]);
+  const ds=shuffle(pool.map(val).filter(v=>v&&v!=='—'))
+    .filter(v=>{ if(seen.has(v))return false; seen.add(v); return true }).slice(0,3);
+  return {t, ans, opts:shuffle([ans,...ds])};
+}
+
+function answer(i){
+  if(state.answered) return;
+  const q=state.q, e=state.deck[state.i];
+  state.picked=i; state.answered=true;
+  const ok = q.opts[i]===q.ans;
+  state.lastOk=ok;
+  state.results[state.i]=ok;
+  if(ok) state.tally.c++;
+  else { state.tally.w++; if(!state.tally.misses.includes(e)) state.tally.misses.push(e); }
+  const slot=$('#stampSlot');
+  if(slot) slot.innerHTML=stampHTML(ok);
+  setTimeout(()=>renderStudy(), ok?650:850);
+  updateRail();
+}
+
+/* ============================================================
+   END OF SESSION
+   ============================================================ */
+function renderEnd(){
+  state.phase='end';
+  show('#vEnd'); hide('#vStudy');
+  const t=state.tally;
+  let inner;
+  if(state.mode==='quiz'){
+    const total=t.c+t.w;
+    const pct= total? t.c/total : 0;
+    const verdict = pct===1 ? '全問正解 — a perfect sheet. The ink dries clean.'
+      : pct>=.8 ? 'Strong work — your brush is steady.'
+      : pct>=.5 ? 'Halfway home. The misses below deserve a second pass.'
+      : 'A rough sheet today — that\u2019s how ink learns. Run them again.';
+    inner=`
+    <div class="overline">Session report · quiz</div>
+    <div class="score">${t.c} <small>/ ${total}</small></div>
+    <div class="verdict">${verdict}</div>
+    ${t.misses.length?`<div class="qlabel">The misses</div>
+    <div class="misslist">${t.misses.map(e=>`
+      <div class="miss"><div class="jk">${e.k}</div><div class="mn2">${esc(e.m)}</div></div>`).join('')}</div>`:
+    '<div class="verdict" style="margin-top:4px">Nothing missed — every cell on the sheet is clean.</div>'}
+    <div class="actions">
+      ${t.misses.length?'<button class="btn" data-act="reviewmisses">Study the misses →</button>':''}
+      <button class="btn ghost" data-act="again">Run this deck again</button>
+      <button class="btn ghost" data-act="newsession">New session</button>
+    </div>`;
+  } else {
+    inner=`
+    <div class="overline">End of sheet · ${MODE_DESC[state.mode][0].toLowerCase()}</div>
+    <div class="score">${state.deck.length} <small>kanji worked through</small></div>
+    <div class="verdict">End of the sheet — ready when you are.</div>
+    <div class="actions">
+      <button class="btn" data-act="again">Run this deck again</button>
+      <button class="btn ghost" data-act="newsession">New session</button>
+    </div>`;
+  }
+  $('#vEnd').innerHTML=`<div class="endwrap">${inner}</div>`;
+  updateRail();
+}
+
+/* ============================================================
+   RAIL
+   ============================================================ */
+function updateRail(){
+  const s=$('#railSum');
+  if(state.phase==='setup'){
+    s.innerHTML=`
+    <div class="sumline"><span>Source</span><b>—</b></div>
+    <div class="sumline"><span>Mode</span><b>—</b></div>
+    <div class="sumline"><span>Position</span><b>—</b></div>`;
+    $('#sheet').innerHTML=''; $('#sheetMeta').innerHTML='—';
+    $('#tallyBox').hidden=true;
+    return;
+  }
+  s.innerHTML=`
+  <div class="sumline"><span>Source</span><b>${SRC_LABEL[state.src]}</b></div>
+  <div class="sumline"><span>Mode</span><b>${MODE_DESC[state.mode][0]}</b> · <button class="linkish" data-act="newsession">new session</button></div>
+  <div class="sumline"><span>Order</span><b>${state.order==='seq'?'sequential':'shuffled'}</b></div>
+  <div class="sumline"><span>Position</span><b>${Math.min(state.i+1,state.deck.length)} / ${state.deck.length}</b></div>
+  ${state.phase==='study'?'<div style="margin-top:10px"><button class="linkish" data-act="endnow">finish early → report</button></div>':''}`;
+  $('#sheet').innerHTML = state.deck.map((_,i)=>{
+    let cls='';
+    if(state.results[i]===true) cls='ok';
+    else if(state.results[i]===false) cls='ng';
+    else if(i===state.i && state.phase==='study') cls='cur';
+    return `<i class="${cls}"></i>`;
+  }).join('');
+  $('#sheetMeta').innerHTML=`<span>${SRC_LABEL[state.src]}</span><span>${state.deck.length} cells</span>`;
+  $('#tallyBox').hidden = state.mode!=='quiz';
+  $('#tally').innerHTML=`<span class="c">〇 ${state.tally.c}</span><span>✕ ${state.tally.w}</span>`;
+}
+
+/* ============================================================
+   NAVIGATION / EVENTS
+   ============================================================ */
+function next(){
+  state.i++; state.practice=false; state.answered=false; state.q=null;
+  if(state.i>=state.deck.length) renderEnd();
+  else { show('#vStudy'); hide('#vEnd'); renderStudy(); }
+}
+function show(sel){const el=$(sel);el.hidden=false;el.classList.remove('view');void el.offsetWidth;el.classList.add('view')}
+function hide(sel){$(sel).hidden=true}
+
+document.addEventListener('click',e=>{
+  const t=e.target;
+  const srcChip=t.closest('.srcchip');
+  if(srcChip){ state.src=srcChip.dataset.src; renderSetup(); if(state.src==='custom'){const i=$('#customIn');if(i)i.focus()} return; }
+  const modeOpt=t.closest('.modeopt');
+  if(modeOpt){ state.mode=modeOpt.dataset.mode; renderSetup(); return; }
+  const ordChip=t.closest('.ordchip');
+  if(ordChip){ state.order=ordChip.dataset.order; renderSetup(); return; }
+  if(t.closest('#beginBtn')){ startSession(); return; }
+  const opt=t.closest('.opt');
+  if(opt){ answer(+opt.dataset.opt); return; }
+  const cover=t.closest('.cover');
+  if(cover){ cover.closest('.fv').classList.add('rev'); return; }
+  const act=t.closest('[data-act]');
+  if(act){
+    const a=act.dataset.act;
+    if(a==='next') next();
+    else if(a==='practice'){ state.practice=true; renderStudy(); }
+    else if(a==='reveal'){ state.practice=false; renderStudy(); }
+    else if(a==='clear'){ const c=$('#trace'); if(c&&c.clear)c.clear(); }
+    else if(a==='newsession') renderSetup();
+    else if(a==='endnow') renderEnd();
+    else if(a==='again'){
+      const deck=[...state.deck]; if(state.order==='rnd')shuffle(deck);
+      state.deck=deck; state.results=deck.map(()=>null);
+      state.i=0; state.practice=false; state.answered=false; state.q=null;
+      state.tally={c:0,w:0,misses:[]};
+      state.phase='study'; show('#vStudy'); hide('#vEnd'); renderStudy(); updateRail();
+    }
+    else if(a==='reviewmisses'){
+      state.deck=[...state.tally.misses]; state.results=state.deck.map(()=>null);
+      state.i=0; state.practice=false; state.answered=false; state.q=null;
+      state.tally={c:0,w:0,misses:[]};
+      state.phase='study'; show('#vStudy'); hide('#vEnd'); renderStudy(); updateRail();
+    }
+  }
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea')) return;
+  if(state.phase!=='study') return;
+  if(state.mode==='quiz' && !state.answered && /^[1-4]$/.test(e.key)){
+    const n=+e.key-1;
+    if(state.q && n<state.q.opts.length){ e.preventDefault(); answer(n); }
+    return;
+  }
+  if(e.key===' '||e.key==='Enter'){
+    const btn=$('#vStudy .actions .btn.primary');
+    if(btn){ e.preventDefault(); btn.click(); }
+  }
+});
+
+renderSetup();
+</script>
+</body>
+</html>
